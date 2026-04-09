@@ -1,0 +1,24 @@
+# Environment variables - never commit API keys
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+
+# Uploaded files and extracted text (user data, not code)
+uploads/
+extracted/
+
+# Backup and data directories
+backup/
+data/
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+
+# Claude Code
+.claude/

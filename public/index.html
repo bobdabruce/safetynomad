@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SafetyNomad · OHS 145 Fire Management</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f1115;
+      --surface: #1a1d24;
+      --surface2: #22262f;
+      --border: #2d323d;
+      --text: #e4e7ed;
+      --text-dim: #8b919e;
+      --accent: #f97316;
+      --accent-glow: rgba(249,115,22,0.15);
+      --accent2: #ef4444;
+      --green: #22c55e;
+      --blue: #3b82f6;
+      --radius: 10px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .logo h1 {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .logo span {
+      color: var(--text-dim);
+      font-size: 12px;
+      font-weight: 400;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 7px 14px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 300px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sidebar-header h2 {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-dim);
+    }
+
+    .doc-count {
+      font-size: 11px;
+      background: var(--accent-glow);
+      color: var(--accent);
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+
+    .doc-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .doc-item {
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      position: relative;
+    }
+
+    .doc-item:hover { background: var(--surface2); }
+
+    .doc-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .doc-icon.pdf { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .doc-icon.txt { background: rgba(59,130,246,0.15); color: #3b82f6; }
+    .doc-icon.other { background: rgba(139,145,158,0.15); color: #8b919e; }
+
+    .doc-info { flex: 1; min-width: 0; }
+    .doc-name {
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .doc-meta {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    .doc-delete {
+      position: absolute;
+      right: 8px;
+      top: 8px;
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: none;
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 14px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .doc-item:hover .doc-delete { display: flex; }
+    .doc-delete:hover { background: rgba(239,68,68,0.2); color: #ef4444; }
+
+    .dropzone {
+      margin: 8px;
+      padding: 24px 16px;
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    .dropzone-icon { font-size: 28px; margin-bottom: 6px; }
+    .dropzone-text { font-size: 13px; color: var(--text-dim); }
+    .dropzone-text strong { color: var(--accent); }
+
+    .upload-input { display: none; }
+
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      scroll-behavior: smooth;
+    }
+
+    .message {
+      max-width: 780px;
+      margin: 0 auto 16px;
+      display: flex;
+      gap: 12px;
+      animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .msg-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .msg-avatar.user { background: var(--blue); }
+    .msg-avatar.assistant { background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+
+    .msg-body { flex: 1; min-width: 0; }
+
+    .msg-role {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .msg-content {
+      font-size: 14px;
+      line-height: 1.65;
+      color: var(--text);
+    }
+
+    .msg-content p { margin-bottom: 10px; }
+    .msg-content p:last-child { margin-bottom: 0; }
+    .msg-content strong { color: var(--accent); font-weight: 600; }
+    .msg-content code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      background: var(--surface2);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .msg-content ul, .msg-content ol { margin: 8px 0 8px 20px; }
+    .msg-content li { margin-bottom: 4px; }
+    .msg-content h3, .msg-content h4 { color: var(--accent); margin: 14px 0 6px; }
+
+    .welcome {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .welcome-inner { max-width: 500px; }
+    .welcome-icon { font-size: 48px; margin-bottom: 16px; }
+    .welcome h2 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .welcome p { color: var(--text-dim); font-size: 14px; line-height: 1.6; margin-bottom: 20px; }
+
+    .quick-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .quick-btn {
+      padding: 8px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .quick-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    .input-bar {
+      padding: 12px 20px 16px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .input-wrapper {
+      max-width: 780px;
+      margin: 0 auto;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .input-field {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      resize: none;
+      min-height: 46px;
+      max-height: 160px;
+      line-height: 1.5;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .input-field:focus { border-color: var(--accent); }
+    .input-field::placeholder { color: var(--text-dim); }
+
+    .send-btn {
+      width: 46px;
+      height: 46px;
+      border-radius: var(--radius);
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .send-btn:hover { background: #ea6c10; }
+    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .typing {
+      display: flex;
+      gap: 4px;
+      padding: 4px 0;
+    }
+    .typing span {
+      width: 7px;
+      height: 7px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.2s; }
+    .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-6px); }
+    }
+
+    .upload-status {
+      padding: 8px 12px;
+      margin: 0 8px 8px;
+      border-radius: 8px;
+      font-size: 12px;
+      display: none;
+    }
+    .upload-status.active { display: block; background: var(--accent-glow); color: var(--accent); }
+    .upload-status.error { display: block; background: rgba(239,68,68,0.15); color: #ef4444; }
+    .upload-status.success { display: block; background: rgba(34,197,94,0.15); color: #22c55e; }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+    @media (max-width: 768px) {
+      .sidebar { width: 100%; position: fixed; left: -100%; top: 0; bottom: 0; z-index: 100; transition: left 0.25s; }
+      .sidebar.open { left: 0; }
+      .mobile-toggle { display: flex !important; }
+    }
+
+    .mobile-toggle { display: none; }
+
+    .drop-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15,17,21,0.9);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .drop-overlay.active { display: flex; }
+    .drop-overlay-icon { font-size: 64px; }
+    .drop-overlay-text { font-size: 20px; font-weight: 600; color: var(--accent); }
+  </style>
+</head>
+<body>
+
+  <div class="drop-overlay" id="dropOverlay">
+    <div class="drop-overlay-icon">📁</div>
+    <div class="drop-overlay-text">Drop files or folders to upload</div>
+    <div style="color:var(--text-dim);font-size:14px;">PDF, TXT, MD, CSV, HTML, JSON — folders scanned recursively</div>
+  </div>
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🔥</div>
+      <div>
+        <h1>SafetyNomad</h1>
+        <span>OHS 145 · Fire Management</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn mobile-toggle" onclick="toggleSidebar()">📚 Docs</button>
+      <button class="btn" onclick="clearChat()">🗑 Clear Chat</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2>📚 Study Materials</h2>
+        <span class="doc-count" id="docCount">0</span>
+      </div>
+
+      <div class="doc-list" id="docList">
+        <div style="padding:20px;text-align:center;color:var(--text-dim);font-size:13px;">
+          No documents yet.<br>Upload files below to get started.
+        </div>
+      </div>
+
+      <div class="upload-status" id="uploadStatus"></div>
+
+      <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+        <div class="dropzone-icon">📂</div>
+        <div class="dropzone-text">
+          <strong>Click or drag</strong> files here<br>
+          PDF · TXT · MD · CSV · HTML · JSON<br>
+          <span style="font-size:11px;opacity:0.7;">Folders supported — all files inside will be uploaded</span>
+        </div>
+      </div>
+      <input type="file" class="upload-input" id="fileInput" multiple
+        accept=".pdf,.txt,.md,.csv,.html,.json,.doc,.docx">
+    </div>
+
+    <div class="chat-area" id="chatArea">
+      <div class="welcome" id="welcome">
+        <div class="welcome-inner">
+          <div class="welcome-icon">🔥</div>
+          <h2>Ready to study fire safety?</h2>
+          <p>Upload your OHS 145 course materials — PDFs, notes, anything — then ask me questions. I'll help you study, create practice quizzes, summarize modules, and prep for assignments.</p>
+          <div class="quick-actions" id="quickActions">
+            <button class="quick-btn" onclick="sendQuick('Summarize the key topics from my uploaded materials')">📋 Summarize materials</button>
+            <button class="quick-btn" onclick="sendQuick('Create 10 practice quiz questions from my study materials')">❓ Quiz me</button>
+            <button class="quick-btn" onclick="sendQuick('What are the financial, social, moral, and legal consequences of poor fire safety?')">💡 Key concepts</button>
+            <button class="quick-btn" onclick="sendQuick('Explain the PDCA cycle for fire safety management')">🔄 PDCA cycle</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="messages" id="messages" style="display:none;"></div>
+
+      <div class="input-bar">
+        <div class="input-wrapper">
+          <textarea class="input-field" id="chatInput"
+            placeholder="Ask about fire safety, request a quiz, or get help with assignments..."
+            rows="1"
+            onkeydown="handleKeyDown(event)"
+            oninput="autoResize(this)"></textarea>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let messages = [];
+    let documents = [];
+    let isLoading = false;
+
+    loadDocuments();
+
+    async function loadDocuments() {
+      try {
+        const res = await fetch('/api/documents');
+        const data = await res.json();
+        documents = data.documents || [];
+        renderDocList();
+      } catch (e) {
+        console.error('Failed to load documents:', e);
+      }
+    }
+
+    function renderDocList() {
+      const list = document.getElementById('docList');
+      const count = document.getElementById('docCount');
+      count.textContent = documents.length;
+
+      if (documents.length === 0) {
+        list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-dim);font-size:13px;">No documents yet.<br>Upload files below to get started.</div>';
+        return;
+      }
+
+      list.innerHTML = documents.map(doc => {
+        const ext = doc.name.split('.').pop().toLowerCase();
+        const iconClass = ext === 'pdf' ? 'pdf' : ['txt','md','csv'].includes(ext) ? 'txt' : 'other';
+        const chars = doc.charCount > 1000 ? (doc.charCount/1000).toFixed(1) + 'k' : doc.charCount;
+        return '<div class="doc-item" title="' + doc.name + '">' +
+          '<div class="doc-icon ' + iconClass + '">' + ext.toUpperCase().slice(0,3) + '</div>' +
+          '<div class="doc-info">' +
+            '<div class="doc-name">' + doc.name + '</div>' +
+            '<div class="doc-meta">' + chars + ' chars</div>' +
+          '</div>' +
+          '<button class="doc-delete" onclick="deleteDoc(event, \'' + doc.id + '\')" title="Remove">✕</button>' +
+        '</div>';
+      }).join('');
+    }
+
+    async function deleteDoc(e, id) {
+      e.stopPropagation();
+      if (!confirm('Remove this document?')) return;
+      try {
+        await fetch('/api/documents/' + id, { method: 'DELETE' });
+        await loadDocuments();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const dropOverlay = document.getElementById('dropOverlay');
+    const uploadStatus = document.getElementById('uploadStatus');
+
+    fileInput.addEventListener('change', function(e) { uploadFiles(e.target.files); });
+
+    dropzone.addEventListener('dragover', function(e) { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', function() { dropzone.classList.remove('dragover'); });
+    dropzone.addEventListener('drop', async function(e) {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      uploadFiles(await getFilesFromTransfer(e.dataTransfer));
+    });
+
+    let dragCounter = 0;
+    document.addEventListener('dragenter', function(e) {
+      e.preventDefault();
+      dragCounter++;
+      dropOverlay.classList.add('active');
+    });
+    document.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      dragCounter--;
+      if (dragCounter === 0) dropOverlay.classList.remove('active');
+    });
+    document.addEventListener('dragover', function(e) { e.preventDefault(); });
+    document.addEventListener('drop', async function(e) {
+      e.preventDefault();
+      dragCounter = 0;
+      dropOverlay.classList.remove('active');
+      if (e.target.closest('.dropzone')) return;
+      uploadFiles(await getFilesFromTransfer(e.dataTransfer));
+    });
+
+    async function getFilesFromTransfer(dataTransfer) {
+      const allowed = ['.pdf','.txt','.md','.csv','.html','.json','.doc','.docx'];
+      const files = [];
+      const items = dataTransfer.items;
+      if (items && items.length && items[0].webkitGetAsEntry) {
+        const entries = [];
+        for (let i = 0; i < items.length; i++) {
+          const entry = items[i].webkitGetAsEntry();
+          if (entry) entries.push(entry);
+        }
+        await Promise.all(entries.map(e => collectFiles(e, files, allowed)));
+      } else {
+        for (let i = 0; i < dataTransfer.files.length; i++) files.push(dataTransfer.files[i]);
+      }
+      return files;
+    }
+
+    async function collectFiles(entry, files, allowed) {
+      if (entry.isFile) {
+        await new Promise(resolve => {
+          entry.file(file => {
+            const ext = '.' + file.name.split('.').pop().toLowerCase();
+            if (allowed.includes(ext)) files.push(file);
+            resolve();
+          }, resolve);
+        });
+      } else if (entry.isDirectory) {
+        const reader = entry.createReader();
+        let batch;
+        do {
+          batch = await new Promise((resolve, reject) => reader.readEntries(resolve, reject));
+          await Promise.all(batch.map(e => collectFiles(e, files, allowed)));
+        } while (batch.length > 0);
+      }
+    }
+
+    async function uploadFiles(fileList) {
+      if (!fileList || fileList.length === 0) return;
+
+      var formData = new FormData();
+      for (var i = 0; i < fileList.length; i++) {
+        formData.append('files', fileList[i]);
+      }
+
+      showStatus('active', 'Uploading ' + fileList.length + ' file(s)...');
+
+      try {
+        var res = await fetch('/api/upload', { method: 'POST', body: formData });
+        var data = await res.json();
+
+        var succeeded = data.results.filter(function(r) { return r.success; });
+        var failed = data.results.filter(function(r) { return !r.success; });
+
+        if (succeeded.length > 0) {
+          showStatus('success', succeeded.length + ' file(s) uploaded and extracted');
+        }
+        if (failed.length > 0) {
+          showStatus('error', failed.length + ' file(s) failed');
+        }
+
+        await loadDocuments();
+        fileInput.value = '';
+
+        setTimeout(function() { uploadStatus.className = 'upload-status'; }, 4000);
+      } catch (e) {
+        showStatus('error', 'Upload failed: ' + e.message);
+      }
+    }
+
+    function showStatus(type, text) {
+      uploadStatus.className = 'upload-status ' + type;
+      uploadStatus.textContent = text;
+    }
+
+    function sendQuick(text) {
+      document.getElementById('chatInput').value = text;
+      sendMessage();
+    }
+
+    async function sendMessage() {
+      var input = document.getElementById('chatInput');
+      var text = input.value.trim();
+      if (!text || isLoading) return;
+
+      document.getElementById('welcome').style.display = 'none';
+      document.getElementById('messages').style.display = 'block';
+
+      messages.push({ role: 'user', content: text });
+      renderMessages();
+      input.value = '';
+      autoResize(input);
+
+      isLoading = true;
+      document.getElementById('sendBtn').disabled = true;
+      appendLoading();
+
+      try {
+        var res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: messages, selectedDocs: [] })
+        });
+        var data = await res.json();
+
+        removeLoading();
+        messages.push({ role: 'assistant', content: data.reply || data.error || 'No response' });
+        renderMessages();
+      } catch (e) {
+        removeLoading();
+        messages.push({ role: 'assistant', content: 'Error: ' + e.message });
+        renderMessages();
+      }
+
+      isLoading = false;
+      document.getElementById('sendBtn').disabled = false;
+    }
+
+    function renderMessages() {
+      var container = document.getElementById('messages');
+      container.innerHTML = messages.map(function(m) {
+        return '<div class="message">' +
+          '<div class="msg-avatar ' + m.role + '">' + (m.role === 'user' ? '👤' : '🔥') + '</div>' +
+          '<div class="msg-body">' +
+            '<div class="msg-role">' + (m.role === 'user' ? 'You' : 'SafetyNomad') + '</div>' +
+            '<div class="msg-content">' + formatMarkdown(m.content) + '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function appendLoading() {
+      var container = document.getElementById('messages');
+      var el = document.createElement('div');
+      el.className = 'message';
+      el.id = 'loading-msg';
+      el.innerHTML = '<div class="msg-avatar assistant">🔥</div>' +
+        '<div class="msg-body">' +
+          '<div class="msg-role">SafetyNomad</div>' +
+          '<div class="typing"><span></span><span></span><span></span></div>' +
+        '</div>';
+      container.appendChild(el);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function removeLoading() {
+      var el = document.getElementById('loading-msg');
+      if (el) el.remove();
+    }
+
+    function clearChat() {
+      messages = [];
+      document.getElementById('messages').style.display = 'none';
+      document.getElementById('messages').innerHTML = '';
+      document.getElementById('welcome').style.display = 'flex';
+    }
+
+    function formatMarkdown(text) {
+      if (!text) return '';
+      return text
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/`(.+?)`/g, '<code>$1</code>')
+        .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+        .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+        .replace(/^\d+\.\s(.+)$/gm, '<li>$1</li>')
+        .replace(/^[-•]\s(.+)$/gm, '<li>$1</li>')
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br>')
+        .replace(/^/, '<p>')
+        .replace(/$/, '</p>');
+    }
+
+    function handleKeyDown(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    }
+
+    function autoResize(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+    }
+
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+    }
+  </script>
+</body>
+</html>
