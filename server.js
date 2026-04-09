@@ -13,13 +13,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-// Ensure uploads directory exists
-const uploadsDir = join(__dirname, 'uploads');
-if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
+// DATA_DIR is set to the Railway volume mount path in production (/app/data).
+// Falls back to a local ./data directory when running on your Mac.
+const dataDir = process.env.DATA_DIR || join(__dirname, 'data');
+const uploadsDir = join(dataDir, 'uploads');
+const extractedDir = join(dataDir, 'extracted');
 
-// Ensure extracted text directory exists
-const extractedDir = join(__dirname, 'extracted');
-if (!existsSync(extractedDir)) mkdirSync(extractedDir, { recursive: true });
+mkdirSync(uploadsDir, { recursive: true });
+mkdirSync(extractedDir, { recursive: true });
 
 // Multer config for file uploads
 const storage = multer.diskStorage({
