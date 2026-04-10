@@ -406,11 +406,11 @@ nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--sur
     <div class="modal-body">
       <div class="form-field">
         <label>Topic Title</label>
-        <input class="form-input" id="newTopicTitle" placeholder="e.g. Fire Behavior">
+        <input class="form-input" id="newTopicTitle" placeholder="e.g. Fire Behavior" onkeydown="if(event.key==='Enter'){event.preventDefault();addTopic();}">
       </div>
       <div class="form-field">
         <label>Subtitle <span style="font-weight:400;text-transform:none;">(optional)</span></label>
-        <input class="form-input" id="newTopicSub" placeholder="e.g. How fires start, spread and kill">
+        <input class="form-input" id="newTopicSub" placeholder="e.g. How fires start, spread and kill" onkeydown="if(event.key==='Enter'){event.preventDefault();addTopic();}">
       </div>
     </div>
     <div class="modal-footer">
@@ -1074,10 +1074,19 @@ function openAddTopicModal() { document.getElementById('newTopicTitle').value=''
 
 async function addTopic() {
   const title = document.getElementById('newTopicTitle').value.trim();
-  if (!title) return;
-  await fetch('/api/chapters/' + currentChapter.id + '/topics', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title, subtitle: document.getElementById('newTopicSub').value.trim() }) });
-  closeModal('addTopicModal');
-  loadTopics(currentChapter.id);
+  if (!title) { document.getElementById('newTopicTitle').focus(); return; }
+  const btn = document.querySelector('#addTopicModal .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
+  try {
+    const res = await fetch('/api/chapters/' + currentChapter.id + '/topics', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title, subtitle: document.getElementById('newTopicSub').value.trim() }) });
+    if (!res.ok) throw new Error('Server error ' + res.status);
+    closeModal('addTopicModal');
+    loadTopics(currentChapter.id);
+  } catch (e) {
+    alert('Failed to add topic: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Add Topic'; }
+  }
 }
 
 // ── Sidebar toggle ────────────────────────────────────────────────────────────
