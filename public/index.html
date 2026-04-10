@@ -472,6 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── View routing ──────────────────────────────────────────────────────────────
 function showView(view) {
+  isGenerating = false;
   ['courses','chapter','chat','notes'].forEach(v => {
     document.getElementById('view-' + v).classList.toggle('hidden', v !== view);
   });
@@ -704,8 +705,9 @@ async function generateOverview() {
     overviewCache[currentTopic.id] = el.innerHTML;
   } catch (e) {
     el.innerHTML = `<p style="color:#ef4444">Error: ${e.message}</p>`;
+  } finally {
+    isGenerating = false;
   }
-  isGenerating = false;
 }
 
 function renderRapidReview(container) {
@@ -887,7 +889,8 @@ async function sendChapterChat() {
   input.value = ''; autoResize(input);
   renderChapterChat();
   isGenerating = true;
-  document.getElementById('chapterChatSend').disabled = true;
+  const sendBtn = document.getElementById('chapterChatSend');
+  if (sendBtn) sendBtn.disabled = true;
   const msgs = document.getElementById('chapterChatMessages');
   const loadEl = addLoadingMsg(msgs);
   try {
@@ -897,9 +900,10 @@ async function sendChapterChat() {
     loadEl.remove();
     chapterChatMessages.push({ role: 'assistant', content: reply });
     renderChapterChat();
-  } catch (e) { loadEl.remove(); }
-  isGenerating = false;
-  document.getElementById('chapterChatSend').disabled = false;
+  } catch (e) { loadEl.remove(); } finally {
+    isGenerating = false;
+    if (sendBtn) sendBtn.disabled = false;
+  }
 }
 
 function chapterChatKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChapterChat(); } }
@@ -913,7 +917,8 @@ async function sendGenChat() {
   input.value = ''; autoResize(input);
   renderGenChat();
   isGenerating = true;
-  document.getElementById('genChatSend').disabled = true;
+  const sendBtn = document.getElementById('genChatSend');
+  if (sendBtn) sendBtn.disabled = true;
   const msgs = document.getElementById('genChatMessages');
   const loadEl = addLoadingMsg(msgs);
   try {
@@ -923,9 +928,10 @@ async function sendGenChat() {
     loadEl.remove();
     genChatMessages.push({ role: 'assistant', content: reply });
     renderGenChat();
-  } catch (e) { loadEl.remove(); }
-  isGenerating = false;
-  document.getElementById('genChatSend').disabled = false;
+  } catch (e) { loadEl.remove(); } finally {
+    isGenerating = false;
+    if (sendBtn) sendBtn.disabled = false;
+  }
 }
 
 function renderGenChat() {
