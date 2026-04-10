@@ -77,8 +77,12 @@ nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--sur
 .topic-item.active{background:var(--accent-dim);border-left:3px solid var(--accent);}
 .topic-item-title{font-size:13px;font-weight:600;}
 .topic-item-sub{font-size:12px;color:var(--text-dim);margin-top:2px;}
-.add-topic-btn{margin:8px;padding:9px;border-radius:8px;border:1px dashed var(--border);background:transparent;color:var(--text-dim);font-size:13px;cursor:pointer;text-align:center;transition:.15s;flex-shrink:0;}
+.sidebar-actions{display:flex;gap:6px;padding:8px;flex-shrink:0;}
+.add-topic-btn{flex:1;padding:9px;border-radius:8px;border:1px dashed var(--border);background:transparent;color:var(--text-dim);font-size:13px;cursor:pointer;text-align:center;transition:.15s;}
 .add-topic-btn:hover{border-color:var(--accent);color:var(--accent);}
+.add-files-btn{padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface-hi);color:var(--text-dim);font-size:16px;cursor:pointer;transition:.15s;flex-shrink:0;}
+.add-files-btn:hover{border-color:var(--accent);color:var(--accent);}
+.sidebar-upload-status{padding:0 10px 8px;font-size:12px;color:var(--text-dim);text-align:center;min-height:20px;}
 .chapter-main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
 .chapter-toolbar{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;}
 .mode-toggle{display:flex;background:var(--surface-hi);border-radius:8px;padding:3px;gap:2px;}
@@ -348,7 +352,14 @@ nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--sur
           <div class="sidebar-ch-title" id="sidebarChTitle"></div>
         </div>
         <div class="topic-list" id="topicList"></div>
-        <button class="add-topic-btn" onclick="openAddTopicModal()">+ Add Topic</button>
+        <div class="sidebar-actions">
+          <button class="add-topic-btn" onclick="openAddTopicModal()">+ Add Topic</button>
+          <button class="add-files-btn" title="Add files to this course" onclick="document.getElementById('sidebarFileInput').click()">📎</button>
+          <button class="add-files-btn" title="Add a folder to this course" onclick="document.getElementById('sidebarFolderInput').click()">📁</button>
+        </div>
+        <div class="sidebar-upload-status" id="sidebarUploadStatus"></div>
+        <input type="file" id="sidebarFileInput" class="hidden" multiple accept=".pdf,.docx,.txt,.csv,.json,.md">
+        <input type="file" id="sidebarFolderInput" class="hidden" webkitdirectory multiple>
       </div>
     </div>
     <div class="chapter-main">
@@ -552,6 +563,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupSourceDrop();
   setupLibraryDrop();
   setupQuickUpload();
+  setupSidebarUpload();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
 });
 
@@ -1518,6 +1530,32 @@ function setupLibraryDrop() {
     openModal('bulkImportModal');
     fi.value = '';
   });
+}
+
+// ── Sidebar file upload ───────────────────────────────────────────────────────
+function setupSidebarUpload() {
+  const fi = document.getElementById('sidebarFileInput');
+  const fo = document.getElementById('sidebarFolderInput');
+  fi.addEventListener('change', () => { sidebarUpload([...fi.files]); fi.value=''; });
+  fo.addEventListener('change', () => { sidebarUpload([...fo.files]); fo.value=''; });
+}
+
+async function sidebarUpload(files) {
+  const valid = files.filter(f=>f.size>0&&!f.name.startsWith('.'));
+  if (!valid.length) return;
+  const status = document.getElementById('sidebarUploadStatus');
+  for (let i=0; i<valid.length; i++) {
+    const f = valid[i];
+    if (status) status.textContent = `Uploading ${i+1}/${valid.length}: ${f.name}`;
+    const fd = new FormData(); fd.append('file', f);
+    try {
+      await fetch('/api/sources/'+currentChapter.id+'/upload',{method:'POST',body:fd});
+    } catch {}
+  }
+  if (status) {
+    status.textContent = `✓ ${valid.length} file${valid.length>1?'s':''} added to ${currentChapter.title}`;
+    setTimeout(()=>{ status.textContent=''; }, 4000);
+  }
 }
 
 // ── Sidebar toggle ────────────────────────────────────────────────────────────
