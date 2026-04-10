@@ -44,7 +44,14 @@ Transform course material into engaging, practical study content. Use these EXAC
 ## MEMORY TOOLS
 ## RAPID REVIEW
 
-Include 2 Canadian workplace scenarios, mnemonics, bullet-point rapid review. Reference National Fire Code of Canada, provincial OHS legislation, WorkSafeBC. Label difficulty: [BASIC], [INTERMEDIATE], [CHALLENGE]. Tone: Direct, practical, no fluff.`;
+Include 2 Canadian workplace scenarios, mnemonics, bullet-point rapid review. Reference National Fire Code of Canada, provincial OHS legislation, WorkSafeBC. Label difficulty: [BASIC], [INTERMEDIATE], [CHALLENGE]. Tone: Direct, practical, no fluff.
+
+CRITICAL — HYPERLINKS: Whenever you mention a specific piece of legislation, regulation, standard, government body, organization, or official document, format it as a markdown hyperlink to the real official website. Examples:
+- [National Fire Code of Canada](https://nrc.canada.ca/en/certifications-evaluations-standards/codes-canada/codes-canada-publications/national-fire-code-canada-2015)
+- [WorkSafeBC](https://www.worksafebc.com)
+- [Canada Labour Code](https://laws-lois.justice.gc.ca/eng/acts/L-2/)
+- [CSA Z1600-17](https://www.csagroup.org/store/product/2427010/)
+Only link to real, accurate URLs. If unsure of the exact URL, link to the organization's homepage. Never fabricate URLs.`;
 
 const CHAPTER_CONTEXT = {
   145: `\nOHS 145: Fire Management. Fire behavior, prevention, hazard ID, emergency response, protection systems, human behavior in fire, legal responsibilities under Canadian OHS law.`,

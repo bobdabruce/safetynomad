@@ -110,6 +110,9 @@ nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--sur
 .overview-content li{margin-bottom:4px;}
 .overview-content strong{color:var(--accent);}
 .overview-content code{background:var(--surface-hi);padding:2px 6px;border-radius:4px;font-size:13px;}
+.overview-content a{color:var(--accent);text-decoration:underline;text-decoration-color:rgba(255,92,38,.4);text-underline-offset:2px;}
+.overview-content a:hover{text-decoration-color:var(--accent);}
+.msg-bubble a{color:#ffaa88;text-decoration:underline;text-underline-offset:2px;}
 .streaming-cursor{display:inline-block;width:2px;height:1em;background:var(--accent);animation:blink .8s infinite;vertical-align:middle;}
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
 
@@ -539,6 +542,13 @@ nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--sur
 </div>
 
 <script>
+// Configure marked: open all links in new tab
+(function() {
+  const r = new marked.Renderer();
+  r.link = (href, title, text) => `<a href="${href}" target="_blank" rel="noopener noreferrer"${title ? ` title="${title}"` : ''}>${text}</a>`;
+  marked.setOptions({ renderer: r });
+})();
+
 // ── State ─────────────────────────────────────────────────────────────────────
 let currentView = 'courses';
 let currentChapter = null;
