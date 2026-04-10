@@ -405,6 +405,21 @@ app.post('/api/general-chat', async (q, res) => {
   } catch (e) { sseChunk(res, { error: e.message }); res.end(); }
 });
 
+// ─── Smart course detection ──────────────────────────────────────────────────
+app.post('/api/detect-course', async (req, res) => {
+  const { text, filename } = req.body;
+  const courseList = CHAPTERS.filter(c => typeof c.id === 'number').map(c => `${c.id}: ${c.code} — ${c.title}`).join('\n');
+  const prompt = `You are routing an OHS document to the right course.\nFilename: "${filename || 'unknown'}"\nContent preview:\n${(text || '').slice(0, 2000)}\n\nCourses:\n${courseList}\n\nWhich course does this belong to? Respond ONLY with JSON: {"courseId":145,"courseName":"Fire Management","confidence":"high","reason":"one sentence"}`;
+  try {
+    const msg = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001', max_tokens: 150,
+      messages: [{ role: 'user', content: prompt }]
+    });
+    const r = msg.content[0].text.trim(), m = r.match(/\{[\s\S]*\}/);
+    res.json(JSON.parse(m ? m[0] : r));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ─── Notes ───────────────────────────────────────────────────────────────────
 app.get('/api/notes', (_, res) => res.json(loadJSON('notes.json', [])));
 app.post('/api/notes', (q, res) => {

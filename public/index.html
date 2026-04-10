@@ -234,6 +234,18 @@ nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--sur
 .source-item-del{width:24px;height:24px;border-radius:5px;border:none;background:transparent;color:var(--text-dim);cursor:pointer;font-size:14px;flex-shrink:0;}
 .source-item-del:hover{background:rgba(239,68,68,.15);color:#ef4444;}
 
+/* ── Quick upload detection rows ── */
+.detect-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface-hi);border-radius:10px;margin-bottom:8px;border:1px solid var(--border);}
+.detect-row .dr-icon{font-size:20px;flex-shrink:0;}
+.detect-row .dr-info{flex:1;min-width:0;}
+.detect-row .dr-filename{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.detect-row .dr-course{font-size:12px;margin-top:2px;}
+.detect-row .dr-course select{background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:2px 6px;outline:none;}
+.detect-row .dr-status{font-size:12px;flex-shrink:0;width:70px;text-align:right;}
+.detect-confidence-high{color:#4ade80;}
+.detect-confidence-medium{color:#fbbf24;}
+.detect-confidence-low{color:#f97316;}
+
 /* ── Library drop zone ── */
 .library-drop-zone{border:2px dashed var(--border);border-radius:14px;padding:24px;text-align:center;cursor:pointer;transition:.2s;margin:0 auto 32px;max-width:1000px;}
 .library-drop-zone:hover,.library-drop-zone.over{border-color:var(--accent);background:var(--accent-dim);}
@@ -297,7 +309,8 @@ nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--sur
     <button class="nav-btn" id="btnNotes" onclick="showView('notes')">📝 Notes</button>
   </div>
   <div class="nav-right">
-    <button class="sources-btn" id="sourcesBtn" onclick="openSourcesModal()">📎 Course Sources</button>
+    <button class="nav-btn" id="quickUploadBtn" onclick="openQuickUpload()" title="Upload any OHS document — auto-routes to the right course">📎 Upload</button>
+    <button class="sources-btn" id="sourcesBtn" onclick="openSourcesModal()">📂 Sources</button>
     <button class="hamburger" id="hamburger" onclick="toggleSidebar()">☰</button>
   </div>
 </nav>
@@ -428,6 +441,28 @@ nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--sur
   </div>
 </div>
 
+<!-- Quick Upload Modal -->
+<div class="modal-overlay" id="quickUploadModal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-head">
+      <h3>📎 Quick Upload</h3>
+      <button class="modal-close" onclick="closeModal('quickUploadModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="drop-zone" id="quickDropZone" onclick="document.getElementById('quickFileInput').click()">
+        <div class="drop-zone-icon">📄</div>
+        <div class="drop-zone-text"><strong>Drop any OHS document</strong><br>AI auto-detects the right course · PDF · DOCX · TXT</div>
+      </div>
+      <input type="file" id="quickFileInput" class="hidden" multiple accept=".pdf,.docx,.txt,.csv,.json,.md">
+      <div id="quickDetectResults"></div>
+    </div>
+    <div class="modal-footer" id="quickUploadFooter" style="display:none;">
+      <button class="btn-secondary" onclick="closeModal('quickUploadModal')">Cancel</button>
+      <button class="btn-primary" id="quickUploadConfirm" onclick="confirmQuickUpload()">Upload All</button>
+    </div>
+  </div>
+</div>
+
 <!-- Bulk Import Modal -->
 <div class="modal-overlay" id="bulkImportModal">
   <div class="modal" style="max-width:640px;">
@@ -516,6 +551,8 @@ document.addEventListener('DOMContentLoaded', () => {
   loadNotes();
   setupSourceDrop();
   setupLibraryDrop();
+  setupQuickUpload();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
 });
 
 // ── View routing ──────────────────────────────────────────────────────────────
@@ -1176,6 +1213,116 @@ async function addTopic() {
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Add Topic'; }
   }
+}
+
+// ── Quick upload (smart course detection) ────────────────────────────────────
+let quickUploadFiles = []; // [{file, courseId, courseName, detected}]
+
+function openQuickUpload() {
+  quickUploadFiles = [];
+  document.getElementById('quickDetectResults').innerHTML = '';
+  document.getElementById('quickUploadFooter').style.display = 'none';
+  openModal('quickUploadModal');
+}
+
+function setupQuickUpload() {
+  const dz = document.getElementById('quickDropZone');
+  const fi = document.getElementById('quickFileInput');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+  dz.addEventListener('drop', async e => {
+    e.preventDefault(); dz.classList.remove('over');
+    const items = [...(e.dataTransfer.items||[])];
+    const entries = items.map(i=>i.webkitGetAsEntry?.()).filter(Boolean);
+    const hasDir = entries.some(en=>en.isDirectory);
+    let files;
+    if (hasDir) {
+      const all = (await Promise.all(entries.map(en=>collectFilesFromEntry(en,null,null)))).flat();
+      files = all;
+    } else {
+      files = [...e.dataTransfer.files];
+    }
+    processQuickFiles(files);
+  });
+  fi.addEventListener('change', () => { processQuickFiles([...fi.files]); fi.value=''; });
+}
+
+async function processQuickFiles(files) {
+  const valid = files.filter(f=>f.size>0&&!f.name.startsWith('.'));
+  if (!valid.length) return;
+  const res = document.getElementById('quickDetectResults');
+  res.innerHTML = '';
+  quickUploadFiles = [];
+
+  for (const f of valid) {
+    const rowId = 'qr-' + Math.random().toString(36).slice(2);
+    const row = document.createElement('div');
+    row.className = 'detect-row'; row.id = rowId;
+    row.innerHTML = `<span class="dr-icon">📄</span><div class="dr-info"><div class="dr-filename">${escHtml(f.name)}</div><div class="dr-course"><span class="loading-spinner"></span> Detecting course…</div></div><div class="dr-status">—</div>`;
+    res.appendChild(row);
+
+    // Read first chunk for detection
+    let preview = '';
+    try {
+      preview = await new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result||'');
+        // Read as text for txt/docx; for PDF just use filename
+        if (f.name.toLowerCase().endsWith('.pdf')) { resolve(''); return; }
+        reader.readAsText(f.slice(0, 8000));
+      });
+    } catch {}
+
+    let courseId = null, courseName = 'Unknown', confidence = 'low', reason = '';
+    try {
+      const dr = await fetch('/api/detect-course', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ text: preview, filename: f.name })
+      });
+      const d = await dr.json();
+      if (d.courseId) {
+        courseId = d.courseId; courseName = d.courseName;
+        confidence = d.confidence||'medium'; reason = d.reason||'';
+      }
+    } catch {}
+
+    const entry = { file: f, courseId, courseName, detected: true };
+    quickUploadFiles.push(entry);
+
+    // Build course selector
+    const opts = allChapters.filter(c=>typeof c.id==='number').map(c=>`<option value="${c.id}" ${c.id===courseId?'selected':''}>${c.code} — ${c.title}</option>`).join('');
+    row.querySelector('.dr-course').innerHTML = `
+      <select onchange="quickUploadFiles[${quickUploadFiles.length-1}].courseId=Number(this.value)">
+        <option value="">— unassigned —</option>${opts}
+      </select>`;
+    const confClass = confidence==='high'?'detect-confidence-high':confidence==='medium'?'detect-confidence-medium':'detect-confidence-low';
+    row.querySelector('.dr-status').innerHTML = `<span class="${confClass}" title="${escHtml(reason)}">${confidence}</span>`;
+  }
+
+  document.getElementById('quickUploadFooter').style.display = 'flex';
+}
+
+async function confirmQuickUpload() {
+  const toUpload = quickUploadFiles.filter(q=>q.courseId);
+  if (!toUpload.length) { alert('No files assigned to a course.'); return; }
+  const btn = document.getElementById('quickUploadConfirm');
+  btn.disabled = true; btn.textContent = 'Uploading…';
+
+  for (let i=0; i<toUpload.length; i++) {
+    const q = toUpload[i];
+    const rowEl = document.querySelectorAll('.detect-row')[quickUploadFiles.indexOf(q)];
+    if (rowEl) rowEl.querySelector('.dr-status').innerHTML = '<span class="loading-spinner"></span>';
+    try {
+      const fd = new FormData(); fd.append('file', q.file);
+      const r = await fetch('/api/sources/'+q.courseId+'/upload',{method:'POST',body:fd});
+      if (!r.ok) throw new Error(r.status);
+      if (rowEl) rowEl.querySelector('.dr-status').innerHTML = '<span style="color:#4ade80">✓</span>';
+    } catch {
+      if (rowEl) rowEl.querySelector('.dr-status').innerHTML = '<span style="color:#ef4444">✗</span>';
+    }
+  }
+  btn.textContent = 'Done';
+  setTimeout(()=>closeModal('quickUploadModal'), 1500);
 }
 
 // ── Bulk folder import ────────────────────────────────────────────────────────
