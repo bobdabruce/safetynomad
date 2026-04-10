@@ -306,6 +306,61 @@ app.post('/api/quiz', async (q, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ─── Course & Program review ──────────────────────────────────────────────────
+app.post('/api/chapters/:id/full-flashcards', async (q, res) => {
+  const id = Number(q.params.id);
+  const topics = (loadJSON('topics.json', DEFAULT_TOPICS)[id] || []).map(t => t.title).join(', ');
+  try {
+    const msg = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001', max_tokens: 6000,
+      system: `Canadian OHS prof. Output ONLY a JSON array of flashcard objects.\n${DISTRACTOR_QUALITY_RULE}\n${getSourceContext(id)}`,
+      messages: [{ role: 'user', content: `30 comprehensive flashcards covering ALL topics in Chapter ${id}: ${topics}. Format: [{"id":1,"difficulty":"basic","question":"...","answer":"..."}]. 10 basic, 12 intermediate, 8 challenge. ONLY JSON array.` }]
+    });
+    const r = msg.content[0].text.trim(), m = r.match(/\[[\s\S]*\]/);
+    res.json(JSON.parse(m ? m[0] : r));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/chapters/:id/full-quiz', async (q, res) => {
+  const id = Number(q.params.id);
+  const topics = (loadJSON('topics.json', DEFAULT_TOPICS)[id] || []).map(t => t.title).join(', ');
+  try {
+    const msg = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001', max_tokens: 6000,
+      system: `Canadian OHS prof generating a comprehensive course exam. Output ONLY a JSON array.\n${DISTRACTOR_QUALITY_RULE}\n${getSourceContext(id)}`,
+      messages: [{ role: 'user', content: `20 exam questions covering ALL topics in Chapter ${id}: ${topics}. Mix of multiple_choice, true_false, scenario. Format: {"id","type","difficulty","question","options":[],"answer","explanation"}. ONLY JSON array.` }]
+    });
+    const r = msg.content[0].text.trim(), m = r.match(/\[[\s\S]*\]/);
+    res.json(JSON.parse(m ? m[0] : r));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/program/flashcards', async (_, res) => {
+  const courses = CHAPTERS.map(c => `${c.code}: ${c.title}`).join(', ');
+  try {
+    const msg = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6', max_tokens: 8000,
+      system: `Canadian OHS prof. Output ONLY a JSON array of flashcard objects.\n${DISTRACTOR_QUALITY_RULE}`,
+      messages: [{ role: 'user', content: `40 comprehensive flashcards covering the entire UofF OHS Safety Officer Training Program: ${courses}. Format: [{"id":1,"difficulty":"basic","question":"...","answer":"...","course":"OHS 100"}]. 12 basic, 18 intermediate, 10 challenge. ONLY JSON array.` }]
+    });
+    const r = msg.content[0].text.trim(), m = r.match(/\[[\s\S]*\]/);
+    res.json(JSON.parse(m ? m[0] : r));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/program/quiz', async (_, res) => {
+  const courses = CHAPTERS.map(c => `${c.code}: ${c.title}`).join(', ');
+  try {
+    const msg = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6', max_tokens: 8000,
+      system: `Canadian OHS prof generating a comprehensive program exam. Output ONLY a JSON array.\n${DISTRACTOR_QUALITY_RULE}`,
+      messages: [{ role: 'user', content: `30 exam questions covering the entire UofF OHS Safety Officer Training Program: ${courses}. Mix of multiple_choice, true_false, scenario. Format: {"id","type","difficulty","question","options":[],"answer","explanation","course":"OHS 100"}. ONLY JSON array.` }]
+    });
+    const r = msg.content[0].text.trim(), m = r.match(/\[[\s\S]*\]/);
+    res.json(JSON.parse(m ? m[0] : r));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.post('/api/chat', async (q, res) => {
   const { chapterId, messages } = q.body;
   openSSE(res);

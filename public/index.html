@@ -233,6 +233,15 @@ nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--sur
 .source-item-del{width:24px;height:24px;border-radius:5px;border:none;background:transparent;color:var(--text-dim);cursor:pointer;font-size:14px;flex-shrink:0;}
 .source-item-del:hover{background:rgba(239,68,68,.15);color:#ef4444;}
 
+/* ── Course Review sidebar item ── */
+.topic-item-special{background:var(--accent-dim);border:1px solid rgba(255,92,38,.25);}
+.topic-item-special .topic-item-title{color:var(--accent);}
+
+/* ── Program Review card ── */
+.program-review-card{grid-column:1/-1;background:linear-gradient(135deg,#1a1430 0%,#141720 100%);}
+.program-review-card .course-open-btn{flex:1;}
+.program-review-btns{display:flex;gap:8px;margin-top:12px;}
+
 /* ── Scrollbar ── */
 ::-webkit-scrollbar{width:5px;}
 ::-webkit-scrollbar-track{background:transparent;}
@@ -283,8 +292,8 @@ nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--sur
       <div class="library-title">SafetyNomad</div>
       <div class="library-sub">University of Fredericton · Safety Officer Training Program</div>
       <div class="library-stats">
-        <div class="stat-pill"><span>5</span> Courses</div>
-        <div class="stat-pill"><span>35</span> Topics</div>
+        <div class="stat-pill" id="statCourses"><span>10</span> Courses</div>
+        <div class="stat-pill" id="statTopics"><span>—</span> Topics</div>
         <div class="stat-pill">AI-Powered Study</div>
       </div>
     </div>
@@ -485,23 +494,38 @@ function goBack() {
 }
 
 // ── Courses ───────────────────────────────────────────────────────────────────
-const COLORS = { 145: '#ff5c26', 140: '#60a5fa', 130: '#f59e0b', 120: '#4ade80', 110: '#a78bfa' };
+const COLORS = { 100:'#94a3b8', 105:'#fb7185', 110:'#a78bfa', 115:'#f97316', 120:'#4ade80', 125:'#34d399', 130:'#f59e0b', 135:'#e879f9', 140:'#60a5fa', 145:'#ff5c26' };
 
 async function loadCourses() {
   const res = await fetch('/api/chapters');
   const chapters = await res.json();
+  const totalTopics = chapters.reduce((s, c) => s + c.topicCount, 0);
+  document.getElementById('statTopics').innerHTML = `<span>${totalTopics}</span> Topics`;
   const grid = document.getElementById('coursesGrid');
-  grid.innerHTML = chapters.map(c => `
-    <div class="course-card" style="--card-color:${COLORS[c.id]||'var(--accent)'}" onclick="openChapter(${c.id})">
+  grid.innerHTML = chapters.map(c => {
+    const col = c.color || COLORS[c.id] || 'var(--accent)';
+    return `<div class="course-card" style="--card-color:${col}" onclick="openChapter(${c.id})">
       <div class="course-card-header">
-        <span class="course-code" style="background:${COLORS[c.id]||'var(--accent)'}22;color:${COLORS[c.id]||'var(--accent)'}">${c.code}</span>
+        <span class="course-code" style="background:${col}22;color:${col}">${c.code}</span>
         <span class="course-topics">${c.topicCount} topics</span>
       </div>
       <div class="course-title">${c.title}</div>
       <div class="course-desc">${c.description}</div>
-      <button class="course-open-btn" style="border-color:${COLORS[c.id]||'var(--accent)'};color:${COLORS[c.id]||'var(--accent)'}">Open Course →</button>
-    </div>
-  `).join('');
+      <button class="course-open-btn" style="border-color:${col};color:${col}">Open Course →</button>
+    </div>`;
+  }).join('') + `
+    <div class="course-card program-review-card" style="--card-color:#6366f1">
+      <div class="course-card-header">
+        <span class="course-code" style="background:#6366f122;color:#6366f1">OHS 100-145</span>
+        <span class="course-topics">All 10 courses</span>
+      </div>
+      <div class="course-title">🎓 Full Program Review</div>
+      <div class="course-desc">Test your mastery across the entire University of Fredericton Safety Officer Training Program.</div>
+      <div class="program-review-btns">
+        <button class="course-open-btn" style="border-color:#6366f1;color:#6366f1" onclick="event.stopPropagation();openProgramReview('flashcards')">🃏 Flashcards</button>
+        <button class="course-open-btn" style="border-color:#6366f1;color:#6366f1" onclick="event.stopPropagation();openProgramReview('quiz')">❓ Quiz</button>
+      </div>
+    </div>`;
 }
 
 async function openChapter(id) {
@@ -519,7 +543,7 @@ async function openChapter(id) {
   const chapters = await res.json();
   const ch = chapters.find(c => c.id === id);
   if (!ch) return;
-  currentChapter = { ...currentChapter, ...ch };
+  currentChapter = { ...currentChapter, ...ch, color: ch.color || COLORS[id] || 'var(--accent)' };
 
   document.getElementById('navChTitle').textContent = ch.title;
   document.getElementById('sidebarChTitle').textContent = ch.code + ' · ' + ch.title;
@@ -532,11 +556,45 @@ async function openChapter(id) {
   resetChapterContent();
 }
 
+async function openProgramReview(tab) {
+  currentChapter = { id: '__program__', title: 'Full Program Review', code: 'OHS 100-145', color: '#6366f1' };
+  currentTopic = { id: '__program__', title: 'Full Program Review', subtitle: 'All 10 OHS courses' };
+  currentMode = 'study';
+  chapterChatMessages = [];
+  overviewCache = {};
+  flashcardsCache = {};
+  quizCache = {};
+  quizAnswers = {};
+  quizSubmitted = false;
+  fcIndex = 0;
+
+  document.getElementById('navChTitle').textContent = 'Full Program Review';
+  document.getElementById('sidebarChTitle').textContent = 'OHS 100-145 · Full Program Review';
+  document.getElementById('sourceModalTitle').textContent = 'Full Program Review';
+
+  showView('chapter');
+  document.getElementById('hamburger').classList.remove('hidden');
+
+  const list = document.getElementById('topicList');
+  list.innerHTML = `<div class="topic-item topic-item-special active" id="topic-__program__">
+    <div class="topic-item-title">🎓 Full Program Review</div>
+    <div class="topic-item-sub">All 10 OHS courses · Flashcards & Quiz</div>
+  </div>`;
+
+  setMode('study');
+  setTab(tab || 'flashcards');
+}
+
 async function loadTopics(chId) {
   const res = await fetch('/api/chapters/' + chId + '/topics');
   const topics = await res.json();
   const list = document.getElementById('topicList');
-  list.innerHTML = topics.map(t => `
+  const courseReview = {id:'__course__',title:'Full Course Review',subtitle:'Flashcards & quiz — all topics'};
+  list.innerHTML = `<div class="topic-item topic-item-special" id="topic-__course__" onclick="selectTopic(${JSON.stringify(courseReview).replace(/"/g,'&quot;')})">
+      <div class="topic-item-title">📚 Full Course Review</div>
+      <div class="topic-item-sub">All topics · Flashcards & Quiz</div>
+    </div>` +
+    topics.map(t => `
     <div class="topic-item" id="topic-${t.id}" onclick="selectTopic(${JSON.stringify(t).replace(/"/g,'&quot;')})">
       <div class="topic-item-title">${t.title}</div>
       <div class="topic-item-sub">${t.subtitle}</div>
@@ -610,6 +668,10 @@ function renderStudyTab() {
 }
 
 function renderOverview(container) {
+  if (currentTopic.id === '__course__' || currentTopic.id === '__program__') {
+    container.innerHTML = `<div class="topic-placeholder"><div class="icon">📚</div><h3>${currentTopic.title}</h3><p>Use the Flashcards or Quiz tab to begin your review.</p></div>`;
+    return;
+  }
   const cached = overviewCache[currentTopic.id];
   if (cached) {
     container.innerHTML = `<div class="overview-content">${cached}</div>`;
@@ -651,6 +713,10 @@ async function generateOverview() {
 }
 
 function renderRapidReview(container) {
+  if (currentTopic.id === '__course__' || currentTopic.id === '__program__') {
+    container.innerHTML = `<div class="topic-placeholder"><div class="icon">📚</div><h3>${currentTopic.title}</h3><p>Use the Flashcards or Quiz tab to begin your review.</p></div>`;
+    return;
+  }
   const cached = overviewCache[currentTopic.id];
   if (!cached) {
     container.innerHTML = `<div class="topic-placeholder"><div class="icon">⚡</div><h3>Generate Overview First</h3><p>Rapid Review extracts from the Overview. Generate the Overview tab first.</p><button class="gen-btn" onclick="setTab('overview');generateOverview()">Generate Overview</button></div>`;
@@ -676,7 +742,10 @@ function renderRapidReview(container) {
 function renderFlashcards(container) {
   const cached = flashcardsCache[currentTopic.id];
   if (!cached) {
-    container.innerHTML = `<div class="topic-placeholder"><div class="icon">🃏</div><h3>Flashcards</h3><p>Generate 20 AI flashcards for this topic.</p><button class="gen-btn" onclick="generateFlashcards()">Generate Flashcards</button></div>`;
+    const isReview = currentTopic.id === '__course__' || currentTopic.id === '__program__';
+    const count = currentTopic.id === '__program__' ? 40 : currentTopic.id === '__course__' ? 30 : 20;
+    const label = isReview ? currentTopic.title : 'Flashcards';
+    container.innerHTML = `<div class="topic-placeholder"><div class="icon">🃏</div><h3>${label}</h3><p>Generate ${count} AI flashcards${isReview ? '' : ' for this topic'}.</p><button class="gen-btn" onclick="generateFlashcards()">Generate Flashcards</button></div>`;
     return;
   }
   fcIndex = Math.min(fcIndex, cached.length - 1);
@@ -695,7 +764,7 @@ function renderFlashcards(container) {
       <div class="card-scene" onclick="document.getElementById('card3d').classList.toggle('flipped')">
         <div class="card-3d" id="card3d">
           <div class="card-face card-front">
-            <div class="card-label">Question</div>
+            <div class="card-label">${fc.course ? fc.course + ' · ' : ''}Question</div>
             <div class="card-text">${fc.question}</div>
             <div class="card-hint">Click to reveal answer</div>
           </div>
@@ -713,7 +782,11 @@ async function generateFlashcards() {
   const btn = event.target;
   btn.disabled = true; btn.textContent = 'Generating…';
   try {
-    const res = await fetch('/api/flashcards', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ chapterId: currentChapter.id, topicId: currentTopic.id, topicTitle: currentTopic.title }) });
+    let url, body;
+    if (currentTopic.id === '__program__') { url = '/api/program/flashcards'; body = {}; }
+    else if (currentTopic.id === '__course__') { url = `/api/chapters/${currentChapter.id}/full-flashcards`; body = {}; }
+    else { url = '/api/flashcards'; body = { chapterId: currentChapter.id, topicId: currentTopic.id, topicTitle: currentTopic.title }; }
+    const res = await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
     flashcardsCache[currentTopic.id] = await res.json();
     fcIndex = 0;
     renderFlashcards(document.getElementById('studyContent'));
@@ -739,7 +812,10 @@ document.addEventListener('keydown', e => {
 function renderQuiz(container) {
   const cached = quizCache[currentTopic.id];
   if (!cached) {
-    container.innerHTML = `<div class="topic-placeholder"><div class="icon">❓</div><h3>Quiz</h3><p>Generate a 12-question practice quiz for this topic.</p><button class="gen-btn" onclick="generateQuiz()">Generate Quiz</button></div>`;
+    const isReview = currentTopic.id === '__course__' || currentTopic.id === '__program__';
+    const count = currentTopic.id === '__program__' ? 30 : currentTopic.id === '__course__' ? 20 : 12;
+    const label = isReview ? currentTopic.title : 'Quiz';
+    container.innerHTML = `<div class="topic-placeholder"><div class="icon">❓</div><h3>${label}</h3><p>Generate a ${count}-question practice quiz${isReview ? '' : ' for this topic'}.</p><button class="gen-btn" onclick="generateQuiz()">Generate Quiz</button></div>`;
     return;
   }
   if (quizSubmitted) { renderQuizScore(container, cached); return; }
@@ -787,7 +863,11 @@ async function generateQuiz() {
   const btn = event.target;
   btn.disabled = true; btn.textContent = 'Generating…';
   try {
-    const res = await fetch('/api/quiz', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ chapterId: currentChapter.id, topicId: currentTopic.id, topicTitle: currentTopic.title }) });
+    let url, body;
+    if (currentTopic.id === '__program__') { url = '/api/program/quiz'; body = {}; }
+    else if (currentTopic.id === '__course__') { url = `/api/chapters/${currentChapter.id}/full-quiz`; body = {}; }
+    else { url = '/api/quiz'; body = { chapterId: currentChapter.id, topicId: currentTopic.id, topicTitle: currentTopic.title }; }
+    const res = await fetch(url, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
     quizCache[currentTopic.id] = await res.json();
     quizAnswers = {}; quizSubmitted = false;
     renderQuiz(document.getElementById('studyContent'));
