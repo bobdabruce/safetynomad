@@ -1,812 +1,1038 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SafetyNomad · OHS 145 Fire Management</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #0f1115;
-      --surface: #1a1d24;
-      --surface2: #22262f;
-      --border: #2d323d;
-      --text: #e4e7ed;
-      --text-dim: #8b919e;
-      --accent: #f97316;
-      --accent-glow: rgba(249,115,22,0.15);
-      --accent2: #ef4444;
-      --green: #22c55e;
-      --blue: #3b82f6;
-      --radius: 10px;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SafetyNomad · OHS Course Library</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0b0d14">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+:root {
+  --bg: #0b0d14;
+  --surface: #141720;
+  --surface-hi: #1e2230;
+  --border: #2a2f3d;
+  --text: #e4e8f0;
+  --text-dim: #7a8194;
+  --accent: #ff5c26;
+  --accent-dim: rgba(255,92,38,0.15);
+  --radius: 10px;
+  --nav-h: 52px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;line-height:1.5;overflow:hidden;}
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+/* ── Nav ── */
+nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:4px;z-index:100;}
+.nav-brand{font-weight:700;font-size:16px;color:var(--accent);margin-right:16px;}
+.nav-btn{padding:6px 14px;border-radius:7px;border:none;background:transparent;color:var(--text-dim);font-size:14px;font-weight:500;cursor:pointer;transition:.15s;}
+.nav-btn:hover{background:var(--surface-hi);color:var(--text);}
+.nav-btn.active{background:var(--accent-dim);color:var(--accent);}
+.nav-back{display:none;align-items:center;gap:6px;padding:6px 12px;border-radius:7px;border:none;background:transparent;color:var(--text-dim);font-size:14px;cursor:pointer;margin-right:8px;}
+.nav-back:hover{color:var(--text);}
+.nav-back.show{display:flex;}
+.nav-chapter-title{font-size:14px;font-weight:600;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.nav-right{margin-left:auto;display:flex;gap:8px;align-items:center;}
+.sources-btn{padding:5px 12px;border-radius:7px;border:1px solid var(--border);background:var(--surface-hi);color:var(--text-dim);font-size:13px;cursor:pointer;display:none;align-items:center;gap:5px;}
+.sources-btn:hover{border-color:var(--accent);color:var(--accent);}
+.sources-btn.show{display:flex;}
+.hamburger{display:none;padding:6px;border-radius:7px;border:none;background:transparent;color:var(--text-dim);font-size:20px;cursor:pointer;}
 
-    body {
-      font-family: 'DM Sans', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
+/* ── Main areas ── */
+#app{position:fixed;top:var(--nav-h);left:0;right:0;bottom:0;overflow-y:auto;}
 
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 20px;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
-      flex-shrink: 0;
-    }
+/* ── Course Library ── */
+#view-courses{padding:40px 24px;}
+.library-header{text-align:center;margin-bottom:40px;}
+.library-label{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--accent);text-transform:uppercase;margin-bottom:8px;}
+.library-title{font-size:32px;font-weight:800;margin-bottom:6px;}
+.library-sub{color:var(--text-dim);font-size:15px;}
+.library-stats{display:flex;gap:12px;justify-content:center;margin-top:16px;}
+.stat-pill{padding:4px 14px;border-radius:20px;border:1px solid var(--border);font-size:13px;color:var(--text-dim);}
+.stat-pill span{color:var(--text);font-weight:600;}
+.courses-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;max-width:1000px;margin:0 auto;}
+.course-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;cursor:pointer;transition:.2s;position:relative;overflow:hidden;}
+.course-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--card-color,var(--accent));}
+.course-card:hover{border-color:var(--card-color,var(--accent));transform:translateY(-2px);}
+.course-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.course-code{font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--accent-dim);color:var(--accent);}
+.course-topics{font-size:12px;color:var(--text-dim);}
+.course-title{font-size:18px;font-weight:700;margin-bottom:6px;}
+.course-desc{font-size:13px;color:var(--text-dim);line-height:1.5;margin-bottom:16px;}
+.course-open-btn{width:100%;padding:9px;border-radius:8px;border:1px solid var(--card-color,var(--accent));background:transparent;color:var(--card-color,var(--accent));font-size:13px;font-weight:600;cursor:pointer;transition:.15s;}
+.course-open-btn:hover{background:var(--card-color,var(--accent));color:#fff;}
 
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+/* ── Chapter View ── */
+#view-chapter{display:flex;height:100%;overflow:hidden;}
+.sidebar{width:260px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:.25s;}
+.sidebar.collapsed{width:0;}
+.sidebar-inner{min-width:260px;display:flex;flex-direction:column;height:100%;overflow:hidden;}
+.sidebar-head{padding:14px 16px 10px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.sidebar-head h3{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);margin-bottom:2px;}
+.sidebar-ch-title{font-size:15px;font-weight:700;}
+.topic-list{flex:1;overflow-y:auto;padding:8px;}
+.topic-item{padding:10px 12px;border-radius:8px;cursor:pointer;transition:.15s;margin-bottom:2px;}
+.topic-item:hover{background:var(--surface-hi);}
+.topic-item.active{background:var(--accent-dim);border-left:3px solid var(--accent);}
+.topic-item-title{font-size:13px;font-weight:600;}
+.topic-item-sub{font-size:12px;color:var(--text-dim);margin-top:2px;}
+.add-topic-btn{margin:8px;padding:9px;border-radius:8px;border:1px dashed var(--border);background:transparent;color:var(--text-dim);font-size:13px;cursor:pointer;text-align:center;transition:.15s;flex-shrink:0;}
+.add-topic-btn:hover{border-color:var(--accent);color:var(--accent);}
+.chapter-main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.chapter-toolbar{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.mode-toggle{display:flex;background:var(--surface-hi);border-radius:8px;padding:3px;gap:2px;}
+.mode-btn{padding:5px 14px;border-radius:6px;border:none;background:transparent;color:var(--text-dim);font-size:13px;font-weight:500;cursor:pointer;transition:.15s;}
+.mode-btn.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.3);}
+.study-tabs{display:flex;gap:4px;flex:1;}
+.tab-btn{padding:5px 14px;border-radius:6px;border:1px solid transparent;background:transparent;color:var(--text-dim);font-size:13px;font-weight:500;cursor:pointer;transition:.15s;}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{background:var(--accent-dim);color:var(--accent);border-color:var(--accent);}
+.chapter-content{flex:1;overflow-y:auto;padding:24px;}
 
-    .logo-icon {
-      width: 32px;
-      height: 32px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-    }
+/* ── Study content ── */
+.topic-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;color:var(--text-dim);}
+.topic-placeholder .icon{font-size:48px;margin-bottom:16px;}
+.topic-placeholder h3{font-size:18px;font-weight:600;color:var(--text);margin-bottom:8px;}
+.gen-btn{margin-top:20px;padding:10px 24px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;}
+.gen-btn:hover{opacity:.9;}
+.gen-btn:disabled{opacity:.5;cursor:not-allowed;}
+.overview-content{max-width:760px;}
+.overview-content h2{font-size:20px;font-weight:700;color:var(--accent);margin:28px 0 10px;padding-top:20px;border-top:1px solid var(--border);}
+.overview-content h2:first-child{margin-top:0;padding-top:0;border-top:none;}
+.overview-content h3{font-size:16px;font-weight:600;margin:16px 0 8px;}
+.overview-content p{margin-bottom:12px;color:var(--text);}
+.overview-content ul,.overview-content ol{margin:8px 0 12px 20px;}
+.overview-content li{margin-bottom:4px;}
+.overview-content strong{color:var(--accent);}
+.overview-content code{background:var(--surface-hi);padding:2px 6px;border-radius:4px;font-size:13px;}
+.streaming-cursor{display:inline-block;width:2px;height:1em;background:var(--accent);animation:blink .8s infinite;vertical-align:middle;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
 
-    .logo h1 {
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-    }
+/* ── Flashcards ── */
+.flashcards-wrap{max-width:600px;margin:0 auto;}
+.fc-controls{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.fc-nav{display:flex;gap:8px;align-items:center;}
+.fc-nav button{width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--surface-hi);color:var(--text);font-size:16px;cursor:pointer;}
+.fc-nav button:hover{border-color:var(--accent);}
+.fc-counter{font-size:14px;color:var(--text-dim);}
+.fc-diff{font-size:12px;padding:3px 10px;border-radius:12px;font-weight:600;}
+.fc-diff.basic{background:rgba(74,222,128,.15);color:#4ade80;}
+.fc-diff.intermediate{background:rgba(251,191,36,.15);color:#fbbf24;}
+.fc-diff.challenge{background:rgba(239,68,68,.15);color:#ef4444;}
+.card-scene{perspective:1000px;height:220px;cursor:pointer;}
+.card-3d{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .5s;}
+.card-3d.flipped{transform:rotateY(180deg);}
+.card-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;border:1px solid var(--border);}
+.card-front{background:var(--surface);}
+.card-back{background:var(--surface-hi);transform:rotateY(180deg);}
+.card-label{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;}
+.card-text{font-size:17px;font-weight:600;line-height:1.5;}
+.card-hint{margin-top:16px;font-size:12px;color:var(--text-dim);}
 
-    .logo span {
-      color: var(--text-dim);
-      font-size: 12px;
-      font-weight: 400;
-    }
+/* ── Quiz ── */
+.quiz-wrap{max-width:680px;}
+.quiz-q{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;}
+.quiz-q-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.quiz-q-num{font-size:12px;font-weight:700;color:var(--text-dim);}
+.quiz-q-type{font-size:11px;padding:2px 8px;border-radius:10px;background:var(--surface-hi);color:var(--text-dim);}
+.quiz-q-text{font-size:15px;font-weight:600;margin-bottom:14px;}
+.quiz-options{display:flex;flex-direction:column;gap:8px;}
+.quiz-opt{padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface-hi);color:var(--text);font-size:14px;cursor:pointer;text-align:left;transition:.15s;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);}
+.quiz-opt.correct{border-color:#4ade80;background:rgba(74,222,128,.1);color:#4ade80;}
+.quiz-opt.wrong{border-color:#ef4444;background:rgba(239,68,68,.1);color:#ef4444;}
+.quiz-explain{margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--surface-hi);font-size:13px;color:var(--text-dim);display:none;}
+.quiz-explain.show{display:block;}
+.quiz-score{text-align:center;padding:40px;background:var(--surface);border-radius:14px;border:1px solid var(--border);}
+.score-num{font-size:64px;font-weight:800;color:var(--accent);}
+.score-label{font-size:18px;color:var(--text-dim);margin-top:4px;}
+.quiz-submit{margin-top:20px;padding:10px 28px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;}
+.quiz-submit:disabled{opacity:.5;cursor:not-allowed;}
 
-    .header-actions {
-      display: flex;
-      gap: 8px;
-    }
+/* ── Chat ── */
+.chat-wrap{display:flex;flex-direction:column;height:100%;overflow:hidden;}
+.chat-messages{flex:1;overflow-y:auto;padding:20px;}
+.chat-msg{display:flex;gap:10px;margin-bottom:16px;max-width:720px;}
+.chat-msg.assistant{flex-direction:row;}
+.chat-msg.user{flex-direction:row-reverse;margin-left:auto;}
+.msg-avatar{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.msg-avatar.user-av{background:#3b82f6;}
+.msg-avatar.ai-av{background:var(--accent);}
+.msg-bubble{padding:10px 14px;border-radius:10px;font-size:14px;line-height:1.6;max-width:580px;}
+.assistant .msg-bubble{background:var(--surface-hi);}
+.user .msg-bubble{background:var(--accent);color:#fff;}
+.msg-bubble h2,.msg-bubble h3,.msg-bubble h4{margin:10px 0 6px;font-size:14px;color:var(--accent);}
+.user .msg-bubble h2,.user .msg-bubble h3{color:#fff;}
+.msg-bubble p{margin-bottom:8px;}
+.msg-bubble ul,.msg-bubble ol{margin:6px 0 6px 18px;}
+.msg-bubble strong{font-weight:700;}
+.chat-input-area{padding:12px 20px;border-top:1px solid var(--border);flex-shrink:0;}
+.chat-input-row{display:flex;gap:8px;align-items:flex-end;max-width:720px;margin:0 auto;}
+.chat-textarea{flex:1;background:var(--surface-hi);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;resize:none;min-height:44px;max-height:140px;outline:none;font-family:inherit;line-height:1.5;}
+.chat-textarea:focus{border-color:var(--accent);}
+.chat-send{width:44px;height:44px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:18px;cursor:pointer;flex-shrink:0;transition:.15s;}
+.chat-send:hover{opacity:.9;}
+.chat-send:disabled{opacity:.4;cursor:not-allowed;}
+.typing-dots{display:flex;gap:4px;padding:4px 0;}
+.typing-dots span{width:6px;height:6px;background:var(--accent);border-radius:50%;animation:bounce 1.2s infinite;}
+.typing-dots span:nth-child(2){animation-delay:.2s;}
+.typing-dots span:nth-child(3){animation-delay:.4s;}
+@keyframes bounce{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-5px);}}
 
-    .btn {
-      padding: 7px 14px;
-      border-radius: 7px;
-      border: 1px solid var(--border);
-      background: var(--surface2);
-      color: var(--text);
-      font-family: inherit;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.15s;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
+/* ── Notes ── */
+#view-notes{padding:24px;}
+.notes-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.notes-header h2{font-size:20px;font-weight:700;}
+.new-note-btn{padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;}
+.notes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;}
+.note-card{background:var(--surface);border-radius:12px;padding:16px;cursor:pointer;transition:.15s;border:1px solid var(--border);position:relative;}
+.note-card:hover{border-color:var(--accent);}
+.note-card-color{position:absolute;top:0;left:0;right:0;height:3px;border-radius:12px 12px 0 0;}
+.note-card-title{font-size:14px;font-weight:700;margin-bottom:6px;margin-top:4px;}
+.note-card-content{font-size:13px;color:var(--text-dim);overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;}
+.note-card-date{font-size:11px;color:var(--text-dim);margin-top:10px;}
 
-    .btn:hover { border-color: var(--accent); color: var(--accent); }
+/* ── General Chat ── */
+#view-chat{display:flex;flex-direction:column;height:100%;overflow:hidden;}
+.gen-chat-header{padding:14px 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.gen-chat-header h2{font-size:16px;font-weight:700;}
+.gen-chat-header p{font-size:13px;color:var(--text-dim);}
 
-    .main {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-    }
+/* ── Modals ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border-radius:14px;border:1px solid var(--border);width:100%;max-width:540px;max-height:80vh;display:flex;flex-direction:column;}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.modal-head h3{font-size:16px;font-weight:700;}
+.modal-close{width:28px;height:28px;border-radius:6px;border:none;background:transparent;color:var(--text-dim);font-size:18px;cursor:pointer;}
+.modal-close:hover{background:var(--surface-hi);color:var(--text);}
+.modal-body{padding:16px 20px;overflow-y:auto;flex:1;}
+.modal-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;}
+.btn-primary{padding:8px 18px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;}
+.btn-secondary{padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-dim);font-size:13px;cursor:pointer;}
+.btn-secondary:hover{color:var(--text);}
+.form-field{margin-bottom:14px;}
+.form-field label{display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px;}
+.form-input{width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface-hi);color:var(--text);font-size:14px;outline:none;font-family:inherit;}
+.form-input:focus{border-color:var(--accent);}
+.form-textarea{width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface-hi);color:var(--text);font-size:14px;outline:none;resize:vertical;min-height:120px;font-family:inherit;line-height:1.5;}
+.form-textarea:focus{border-color:var(--accent);}
+.drop-zone{border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:.15s;margin-bottom:14px;}
+.drop-zone:hover,.drop-zone.over{border-color:var(--accent);background:var(--accent-dim);}
+.drop-zone-icon{font-size:32px;margin-bottom:8px;}
+.drop-zone-text{font-size:13px;color:var(--text-dim);}
+.drop-zone-text strong{color:var(--accent);}
+.url-row{display:flex;gap:8px;margin-bottom:14px;}
+.url-row input{flex:1;}
+.source-list{display:flex;flex-direction:column;gap:6px;}
+.source-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface-hi);border-radius:8px;font-size:13px;}
+.source-item-icon{font-size:16px;}
+.source-item-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.source-item-size{font-size:11px;color:var(--text-dim);flex-shrink:0;}
+.source-item-del{width:24px;height:24px;border-radius:5px;border:none;background:transparent;color:var(--text-dim);cursor:pointer;font-size:14px;flex-shrink:0;}
+.source-item-del:hover{background:rgba(239,68,68,.15);color:#ef4444;}
 
-    .sidebar {
-      width: 300px;
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      background: var(--surface);
-      flex-shrink: 0;
-    }
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:var(--text-dim);}
 
-    .sidebar-header {
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
+/* ── Responsive ── */
+@media(max-width:680px){
+  .sidebar{position:fixed;top:var(--nav-h);left:0;bottom:0;z-index:90;transform:translateX(-100%);transition:.25s;}
+  .sidebar.mobile-open{transform:translateX(0);}
+  .hamburger{display:flex;}
+  .courses-grid{grid-template-columns:1fr;}
+  #view-courses{padding:24px 16px;}
+  .library-title{font-size:24px;}
+  .chapter-toolbar{flex-wrap:wrap;gap:6px;}
+  .study-tabs{overflow-x:auto;}
+}
 
-    .sidebar-header h2 {
-      font-size: 13px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--text-dim);
-    }
-
-    .doc-count {
-      font-size: 11px;
-      background: var(--accent-glow);
-      color: var(--accent);
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-weight: 600;
-    }
-
-    .doc-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 8px;
-    }
-
-    .doc-item {
-      padding: 10px 12px;
-      border-radius: 8px;
-      margin-bottom: 4px;
-      cursor: pointer;
-      transition: all 0.15s;
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      position: relative;
-    }
-
-    .doc-item:hover { background: var(--surface2); }
-
-    .doc-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      flex-shrink: 0;
-      font-weight: 700;
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    .doc-icon.pdf { background: rgba(239,68,68,0.15); color: #ef4444; }
-    .doc-icon.txt { background: rgba(59,130,246,0.15); color: #3b82f6; }
-    .doc-icon.other { background: rgba(139,145,158,0.15); color: #8b919e; }
-
-    .doc-info { flex: 1; min-width: 0; }
-    .doc-name {
-      font-size: 13px;
-      font-weight: 500;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .doc-meta {
-      font-size: 11px;
-      color: var(--text-dim);
-      margin-top: 2px;
-    }
-
-    .doc-delete {
-      position: absolute;
-      right: 8px;
-      top: 8px;
-      width: 20px;
-      height: 20px;
-      border-radius: 4px;
-      border: none;
-      background: transparent;
-      color: var(--text-dim);
-      cursor: pointer;
-      font-size: 14px;
-      display: none;
-      align-items: center;
-      justify-content: center;
-    }
-    .doc-item:hover .doc-delete { display: flex; }
-    .doc-delete:hover { background: rgba(239,68,68,0.2); color: #ef4444; }
-
-    .dropzone {
-      margin: 8px;
-      padding: 24px 16px;
-      border: 2px dashed var(--border);
-      border-radius: var(--radius);
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s;
-      flex-shrink: 0;
-    }
-
-    .dropzone:hover, .dropzone.dragover {
-      border-color: var(--accent);
-      background: var(--accent-glow);
-    }
-
-    .dropzone-icon { font-size: 28px; margin-bottom: 6px; }
-    .dropzone-text { font-size: 13px; color: var(--text-dim); }
-    .dropzone-text strong { color: var(--accent); }
-
-    .upload-input { display: none; }
-
-    .chat-area {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
-      scroll-behavior: smooth;
-    }
-
-    .message {
-      max-width: 780px;
-      margin: 0 auto 16px;
-      display: flex;
-      gap: 12px;
-      animation: fadeIn 0.2s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .msg-avatar {
-      width: 30px;
-      height: 30px;
-      border-radius: 7px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-
-    .msg-avatar.user { background: var(--blue); }
-    .msg-avatar.assistant { background: linear-gradient(135deg, var(--accent), var(--accent2)); }
-
-    .msg-body { flex: 1; min-width: 0; }
-
-    .msg-role {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-dim);
-      margin-bottom: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-    }
-
-    .msg-content {
-      font-size: 14px;
-      line-height: 1.65;
-      color: var(--text);
-    }
-
-    .msg-content p { margin-bottom: 10px; }
-    .msg-content p:last-child { margin-bottom: 0; }
-    .msg-content strong { color: var(--accent); font-weight: 600; }
-    .msg-content code {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      background: var(--surface2);
-      padding: 2px 6px;
-      border-radius: 4px;
-    }
-    .msg-content ul, .msg-content ol { margin: 8px 0 8px 20px; }
-    .msg-content li { margin-bottom: 4px; }
-    .msg-content h3, .msg-content h4 { color: var(--accent); margin: 14px 0 6px; }
-
-    .welcome {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 40px;
-    }
-
-    .welcome-inner { max-width: 500px; }
-    .welcome-icon { font-size: 48px; margin-bottom: 16px; }
-    .welcome h2 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
-    .welcome p { color: var(--text-dim); font-size: 14px; line-height: 1.6; margin-bottom: 20px; }
-
-    .quick-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: center;
-    }
-
-    .quick-btn {
-      padding: 8px 14px;
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text);
-      font-family: inherit;
-      font-size: 13px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .quick-btn:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: var(--accent-glow);
-    }
-
-    .input-bar {
-      padding: 12px 20px 16px;
-      border-top: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-
-    .input-wrapper {
-      max-width: 780px;
-      margin: 0 auto;
-      display: flex;
-      gap: 10px;
-      align-items: flex-end;
-    }
-
-    .input-field {
-      flex: 1;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 12px 16px;
-      color: var(--text);
-      font-family: inherit;
-      font-size: 14px;
-      resize: none;
-      min-height: 46px;
-      max-height: 160px;
-      line-height: 1.5;
-      outline: none;
-      transition: border-color 0.15s;
-    }
-
-    .input-field:focus { border-color: var(--accent); }
-    .input-field::placeholder { color: var(--text-dim); }
-
-    .send-btn {
-      width: 46px;
-      height: 46px;
-      border-radius: var(--radius);
-      border: none;
-      background: var(--accent);
-      color: #fff;
-      font-size: 18px;
-      cursor: pointer;
-      transition: all 0.15s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-    .send-btn:hover { background: #ea6c10; }
-    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    .typing {
-      display: flex;
-      gap: 4px;
-      padding: 4px 0;
-    }
-    .typing span {
-      width: 7px;
-      height: 7px;
-      background: var(--accent);
-      border-radius: 50%;
-      animation: bounce 1.2s infinite;
-    }
-    .typing span:nth-child(2) { animation-delay: 0.2s; }
-    .typing span:nth-child(3) { animation-delay: 0.4s; }
-
-    @keyframes bounce {
-      0%, 60%, 100% { transform: translateY(0); }
-      30% { transform: translateY(-6px); }
-    }
-
-    .upload-status {
-      padding: 8px 12px;
-      margin: 0 8px 8px;
-      border-radius: 8px;
-      font-size: 12px;
-      display: none;
-    }
-    .upload-status.active { display: block; background: var(--accent-glow); color: var(--accent); }
-    .upload-status.error { display: block; background: rgba(239,68,68,0.15); color: #ef4444; }
-    .upload-status.success { display: block; background: rgba(34,197,94,0.15); color: #22c55e; }
-
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
-
-    @media (max-width: 768px) {
-      .sidebar { width: 100%; position: fixed; left: -100%; top: 0; bottom: 0; z-index: 100; transition: left 0.25s; }
-      .sidebar.open { left: 0; }
-      .mobile-toggle { display: flex !important; }
-    }
-
-    .mobile-toggle { display: none; }
-
-    .drop-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(15,17,21,0.9);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .drop-overlay.active { display: flex; }
-    .drop-overlay-icon { font-size: 64px; }
-    .drop-overlay-text { font-size: 20px; font-weight: 600; color: var(--accent); }
-  </style>
+.hidden{display:none!important;}
+.loading-spinner{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+</style>
 </head>
 <body>
 
-  <div class="drop-overlay" id="dropOverlay">
-    <div class="drop-overlay-icon">📁</div>
-    <div class="drop-overlay-text">Drop files or folders to upload</div>
-    <div style="color:var(--text-dim);font-size:14px;">PDF, TXT, MD, CSV, HTML, JSON — folders scanned recursively</div>
+<!-- Nav -->
+<nav>
+  <button class="nav-back" id="navBack" onclick="goBack()">← Back</button>
+  <span class="nav-brand" id="navBrand">🔥 SafetyNomad</span>
+  <span class="nav-chapter-title hidden" id="navChTitle"></span>
+  <div id="mainNavBtns">
+    <button class="nav-btn active" id="btnCourses" onclick="showView('courses')">📚 Courses</button>
+    <button class="nav-btn" id="btnChat" onclick="showView('chat')">💬 Chat</button>
+    <button class="nav-btn" id="btnNotes" onclick="showView('notes')">📝 Notes</button>
+  </div>
+  <div class="nav-right">
+    <button class="sources-btn" id="sourcesBtn" onclick="openSourcesModal()">📎 Course Sources</button>
+    <button class="hamburger" id="hamburger" onclick="toggleSidebar()">☰</button>
+  </div>
+</nav>
+
+<div id="app">
+
+  <!-- ── Courses view ── -->
+  <div id="view-courses">
+    <div class="library-header">
+      <div class="library-label">Canadian OHS Course Library</div>
+      <div class="library-title">SafetyNomad</div>
+      <div class="library-sub">University of Fredericton · Safety Officer Training Program</div>
+      <div class="library-stats">
+        <div class="stat-pill"><span>5</span> Courses</div>
+        <div class="stat-pill"><span>35</span> Topics</div>
+        <div class="stat-pill">AI-Powered Study</div>
+      </div>
+    </div>
+    <div class="courses-grid" id="coursesGrid">
+      <!-- populated by JS -->
+    </div>
   </div>
 
-  <header>
-    <div class="logo">
-      <div class="logo-icon">🔥</div>
-      <div>
-        <h1>SafetyNomad</h1>
-        <span>OHS 145 · Fire Management</span>
-      </div>
-    </div>
-    <div class="header-actions">
-      <button class="btn mobile-toggle" onclick="toggleSidebar()">📚 Docs</button>
-      <button class="btn" onclick="clearChat()">🗑 Clear Chat</button>
-    </div>
-  </header>
-
-  <div class="main">
+  <!-- ── Chapter view ── -->
+  <div id="view-chapter" class="hidden" style="height:100%;">
     <div class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-        <h2>📚 Study Materials</h2>
-        <span class="doc-count" id="docCount">0</span>
-      </div>
-
-      <div class="doc-list" id="docList">
-        <div style="padding:20px;text-align:center;color:var(--text-dim);font-size:13px;">
-          No documents yet.<br>Upload files below to get started.
+      <div class="sidebar-inner">
+        <div class="sidebar-head">
+          <h3>Topics</h3>
+          <div class="sidebar-ch-title" id="sidebarChTitle"></div>
         </div>
+        <div class="topic-list" id="topicList"></div>
+        <button class="add-topic-btn" onclick="openAddTopicModal()">+ Add Topic</button>
       </div>
-
-      <div class="upload-status" id="uploadStatus"></div>
-
-      <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
-        <div class="dropzone-icon">📂</div>
-        <div class="dropzone-text">
-          <strong>Click or drag</strong> files here<br>
-          PDF · TXT · MD · CSV · HTML · JSON<br>
-          <span style="font-size:11px;opacity:0.7;">Folders supported — all files inside will be uploaded</span>
-        </div>
-      </div>
-      <input type="file" class="upload-input" id="fileInput" multiple
-        accept=".pdf,.txt,.md,.csv,.html,.json,.doc,.docx">
     </div>
-
-    <div class="chat-area" id="chatArea">
-      <div class="welcome" id="welcome">
-        <div class="welcome-inner">
-          <div class="welcome-icon">🔥</div>
-          <h2>Ready to study fire safety?</h2>
-          <p>Upload your OHS 145 course materials — PDFs, notes, anything — then ask me questions. I'll help you study, create practice quizzes, summarize modules, and prep for assignments.</p>
-          <div class="quick-actions" id="quickActions">
-            <button class="quick-btn" onclick="sendQuick('Summarize the key topics from my uploaded materials')">📋 Summarize materials</button>
-            <button class="quick-btn" onclick="sendQuick('Create 10 practice quiz questions from my study materials')">❓ Quiz me</button>
-            <button class="quick-btn" onclick="sendQuick('What are the financial, social, moral, and legal consequences of poor fire safety?')">💡 Key concepts</button>
-            <button class="quick-btn" onclick="sendQuick('Explain the PDCA cycle for fire safety management')">🔄 PDCA cycle</button>
+    <div class="chapter-main">
+      <div class="chapter-toolbar" id="chapterToolbar">
+        <div class="mode-toggle">
+          <button class="mode-btn active" id="modeStudy" onclick="setMode('study')">Study</button>
+          <button class="mode-btn" id="modeChat" onclick="setMode('chat')">Chat</button>
+        </div>
+        <div class="study-tabs" id="studyTabs">
+          <button class="tab-btn active" onclick="setTab('overview')">Overview</button>
+          <button class="tab-btn" onclick="setTab('flashcards')">Flashcards</button>
+          <button class="tab-btn" onclick="setTab('quiz')">Quiz</button>
+          <button class="tab-btn" onclick="setTab('rapid')">Rapid Review</button>
+        </div>
+      </div>
+      <div class="chapter-content" id="chapterContent">
+        <div class="topic-placeholder" id="topicPlaceholder">
+          <div class="icon">📖</div>
+          <h3>Select a topic</h3>
+          <p>Choose a topic from the sidebar to start studying.</p>
+        </div>
+        <div id="studyContent" class="hidden"></div>
+        <div id="chatContent" class="chat-wrap hidden">
+          <div class="chat-messages" id="chapterChatMessages"></div>
+          <div class="chat-input-area">
+            <div class="chat-input-row">
+              <textarea class="chat-textarea" id="chapterChatInput" placeholder="Ask about this chapter…" rows="1" onkeydown="chapterChatKey(event)" oninput="autoResize(this)"></textarea>
+              <button class="chat-send" id="chapterChatSend" onclick="sendChapterChat()">➤</button>
+            </div>
           </div>
         </div>
       </div>
+    </div>
+  </div>
 
-      <div class="messages" id="messages" style="display:none;"></div>
-
-      <div class="input-bar">
-        <div class="input-wrapper">
-          <textarea class="input-field" id="chatInput"
-            placeholder="Ask about fire safety, request a quiz, or get help with assignments..."
-            rows="1"
-            onkeydown="handleKeyDown(event)"
-            oninput="autoResize(this)"></textarea>
-          <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
-        </div>
+  <!-- ── General Chat view ── -->
+  <div id="view-chat" class="hidden" style="height:100%;">
+    <div class="gen-chat-header">
+      <h2>💬 AI Assistant</h2>
+      <p>Ask anything — OHS questions, study help, or general topics.</p>
+    </div>
+    <div class="chat-messages" id="genChatMessages" style="flex:1;overflow-y:auto;padding:20px;"></div>
+    <div class="chat-input-area">
+      <div class="chat-input-row">
+        <textarea class="chat-textarea" id="genChatInput" placeholder="Ask anything…" rows="1" onkeydown="genChatKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="chat-send" id="genChatSend" onclick="sendGenChat()">➤</button>
       </div>
     </div>
   </div>
 
-  <script>
-    let messages = [];
-    let documents = [];
-    let isLoading = false;
+  <!-- ── Notes view ── -->
+  <div id="view-notes" class="hidden">
+    <div class="notes-header">
+      <h2>📝 Notes</h2>
+      <button class="new-note-btn" onclick="openNoteModal()">+ New Note</button>
+    </div>
+    <div class="notes-grid" id="notesGrid"></div>
+  </div>
 
-    loadDocuments();
+</div>
 
-    async function loadDocuments() {
-      try {
-        const res = await fetch('/api/documents');
-        const data = await res.json();
-        documents = data.documents || [];
-        renderDocList();
-      } catch (e) {
-        console.error('Failed to load documents:', e);
-      }
-    }
+<!-- Sources Modal -->
+<div class="modal-overlay" id="sourcesModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>📎 Course Sources — <span id="sourceModalTitle"></span></h3>
+      <button class="modal-close" onclick="closeModal('sourcesModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="drop-zone" id="sourceDropZone" onclick="document.getElementById('sourceFileInput').click()">
+        <div class="drop-zone-icon">📂</div>
+        <div class="drop-zone-text"><strong>Click or drag</strong> files here<br>PDF · DOCX · TXT · CSV · JSON</div>
+      </div>
+      <input type="file" id="sourceFileInput" class="hidden" multiple accept=".pdf,.docx,.txt,.csv,.json,.md">
+      <div class="url-row">
+        <input class="form-input" id="sourceUrlInput" type="url" placeholder="Paste a URL to scrape…">
+        <button class="btn-primary" onclick="addSourceUrl()">Add URL</button>
+      </div>
+      <div class="source-list" id="sourceList"></div>
+    </div>
+  </div>
+</div>
 
-    function renderDocList() {
-      const list = document.getElementById('docList');
-      const count = document.getElementById('docCount');
-      count.textContent = documents.length;
+<!-- Add Topic Modal -->
+<div class="modal-overlay" id="addTopicModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Add Topic</h3>
+      <button class="modal-close" onclick="closeModal('addTopicModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label>Topic Title</label>
+        <input class="form-input" id="newTopicTitle" placeholder="e.g. Fire Behavior">
+      </div>
+      <div class="form-field">
+        <label>Subtitle <span style="font-weight:400;text-transform:none;">(optional)</span></label>
+        <input class="form-input" id="newTopicSub" placeholder="e.g. How fires start, spread and kill">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('addTopicModal')">Cancel</button>
+      <button class="btn-primary" onclick="addTopic()">Add Topic</button>
+    </div>
+  </div>
+</div>
 
-      if (documents.length === 0) {
-        list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-dim);font-size:13px;">No documents yet.<br>Upload files below to get started.</div>';
-        return;
-      }
+<!-- Note Modal -->
+<div class="modal-overlay" id="noteModal">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-head">
+      <h3 id="noteModalTitle">New Note</h3>
+      <button class="modal-close" onclick="closeModal('noteModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label>Title</label>
+        <input class="form-input" id="noteTitleInput" placeholder="Note title">
+      </div>
+      <div class="form-field">
+        <label>Content</label>
+        <textarea class="form-textarea" id="noteContentInput" placeholder="Write your note…" style="min-height:200px;"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" id="noteDeleteBtn" onclick="deleteCurrentNote()" style="margin-right:auto;color:#ef4444;border-color:#ef4444;" class="hidden">Delete</button>
+      <button class="btn-secondary" onclick="closeModal('noteModal')">Cancel</button>
+      <button class="btn-primary" onclick="saveNote()">Save</button>
+    </div>
+  </div>
+</div>
 
-      list.innerHTML = documents.map(doc => {
-        const ext = doc.name.split('.').pop().toLowerCase();
-        const iconClass = ext === 'pdf' ? 'pdf' : ['txt','md','csv'].includes(ext) ? 'txt' : 'other';
-        const chars = doc.charCount > 1000 ? (doc.charCount/1000).toFixed(1) + 'k' : doc.charCount;
-        return '<div class="doc-item" title="' + doc.name + '">' +
-          '<div class="doc-icon ' + iconClass + '">' + ext.toUpperCase().slice(0,3) + '</div>' +
-          '<div class="doc-info">' +
-            '<div class="doc-name">' + doc.name + '</div>' +
-            '<div class="doc-meta">' + chars + ' chars</div>' +
-          '</div>' +
-          '<button class="doc-delete" onclick="deleteDoc(event, \'' + doc.id + '\')" title="Remove">✕</button>' +
-        '</div>';
-      }).join('');
-    }
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let currentView = 'courses';
+let currentChapter = null;
+let currentTopic = null;
+let currentMode = 'study'; // 'study' | 'chat'
+let currentTab = 'overview';
+let overviewCache = {}; // topicId -> html
+let flashcardsCache = {}; // topicId -> array
+let quizCache = {}; // topicId -> array
+let quizAnswers = {};
+let quizSubmitted = false;
+let fcIndex = 0;
+let chapterChatMessages = [];
+let genChatMessages = [];
+let editingNoteId = null;
+let isGenerating = false;
 
-    async function deleteDoc(e, id) {
-      e.stopPropagation();
-      if (!confirm('Remove this document?')) return;
-      try {
-        await fetch('/api/documents/' + id, { method: 'DELETE' });
-        await loadDocuments();
-      } catch (e) {
-        console.error(e);
-      }
-    }
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadCourses();
+  loadNotes();
+  setupSourceDrop();
+});
 
-    const dropzone = document.getElementById('dropzone');
-    const fileInput = document.getElementById('fileInput');
-    const dropOverlay = document.getElementById('dropOverlay');
-    const uploadStatus = document.getElementById('uploadStatus');
+// ── View routing ──────────────────────────────────────────────────────────────
+function showView(view) {
+  ['courses','chapter','chat','notes'].forEach(v => {
+    document.getElementById('view-' + v).classList.toggle('hidden', v !== view);
+  });
+  currentView = view;
+  // Nav active states
+  ['courses','chat','notes'].forEach(v => {
+    document.getElementById('btn' + v.charAt(0).toUpperCase() + v.slice(1)).classList.toggle('active', v === view);
+  });
+  document.getElementById('mainNavBtns').classList.toggle('hidden', view === 'chapter');
+  document.getElementById('navBack').classList.toggle('show', view === 'chapter');
+  document.getElementById('navBrand').classList.toggle('hidden', view === 'chapter');
+  document.getElementById('navChTitle').classList.toggle('hidden', view !== 'chapter');
+  document.getElementById('sourcesBtn').classList.toggle('show', view === 'chapter');
+  if (view !== 'chapter') document.getElementById('hamburger').classList.add('hidden');
+}
 
-    fileInput.addEventListener('change', function(e) { uploadFiles(e.target.files); });
+function goBack() {
+  showView('courses');
+  currentChapter = null;
+  currentTopic = null;
+}
 
-    dropzone.addEventListener('dragover', function(e) { e.preventDefault(); dropzone.classList.add('dragover'); });
-    dropzone.addEventListener('dragleave', function() { dropzone.classList.remove('dragover'); });
-    dropzone.addEventListener('drop', async function(e) {
-      e.preventDefault();
-      dropzone.classList.remove('dragover');
-      uploadFiles(await getFilesFromTransfer(e.dataTransfer));
+// ── Courses ───────────────────────────────────────────────────────────────────
+const COLORS = { 145: '#ff5c26', 140: '#60a5fa', 130: '#f59e0b', 120: '#4ade80', 110: '#a78bfa' };
+
+async function loadCourses() {
+  const res = await fetch('/api/chapters');
+  const chapters = await res.json();
+  const grid = document.getElementById('coursesGrid');
+  grid.innerHTML = chapters.map(c => `
+    <div class="course-card" style="--card-color:${COLORS[c.id]||'var(--accent)'}" onclick="openChapter(${c.id})">
+      <div class="course-card-header">
+        <span class="course-code" style="background:${COLORS[c.id]||'var(--accent)'}22;color:${COLORS[c.id]||'var(--accent)'}">${c.code}</span>
+        <span class="course-topics">${c.topicCount} topics</span>
+      </div>
+      <div class="course-title">${c.title}</div>
+      <div class="course-desc">${c.description}</div>
+      <button class="course-open-btn" style="border-color:${COLORS[c.id]||'var(--accent)'};color:${COLORS[c.id]||'var(--accent)'}">Open Course →</button>
+    </div>
+  `).join('');
+}
+
+async function openChapter(id) {
+  currentChapter = { id, color: COLORS[id] || 'var(--accent)' };
+  currentTopic = null;
+  currentMode = 'study';
+  currentTab = 'overview';
+  chapterChatMessages = [];
+  overviewCache = {};
+  flashcardsCache = {};
+  quizCache = {};
+
+  // Load chapter info
+  const res = await fetch('/api/chapters');
+  const chapters = await res.json();
+  const ch = chapters.find(c => c.id === id);
+  if (!ch) return;
+  currentChapter = { ...currentChapter, ...ch };
+
+  document.getElementById('navChTitle').textContent = ch.title;
+  document.getElementById('sidebarChTitle').textContent = ch.code + ' · ' + ch.title;
+  document.getElementById('sourceModalTitle').textContent = ch.title;
+
+  showView('chapter');
+  document.getElementById('hamburger').classList.remove('hidden');
+
+  await loadTopics(id);
+  resetChapterContent();
+}
+
+async function loadTopics(chId) {
+  const res = await fetch('/api/chapters/' + chId + '/topics');
+  const topics = await res.json();
+  const list = document.getElementById('topicList');
+  list.innerHTML = topics.map(t => `
+    <div class="topic-item" id="topic-${t.id}" onclick="selectTopic(${JSON.stringify(t).replace(/"/g,'&quot;')})">
+      <div class="topic-item-title">${t.title}</div>
+      <div class="topic-item-sub">${t.subtitle}</div>
+    </div>
+  `).join('');
+}
+
+function selectTopic(topic) {
+  currentTopic = topic;
+  document.querySelectorAll('.topic-item').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('topic-' + topic.id);
+  if (el) el.classList.add('active');
+  // Close sidebar on mobile
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  setMode(currentMode);
+}
+
+function resetChapterContent() {
+  document.getElementById('topicPlaceholder').classList.remove('hidden');
+  document.getElementById('studyContent').classList.add('hidden');
+  document.getElementById('chatContent').classList.add('hidden');
+  setActiveTab('overview');
+  setActiveMode('study');
+}
+
+// ── Mode & Tabs ───────────────────────────────────────────────────────────────
+function setMode(mode) {
+  currentMode = mode;
+  setActiveMode(mode);
+  if (!currentTopic) return;
+  if (mode === 'study') {
+    document.getElementById('studyTabs').classList.remove('hidden');
+    renderStudyTab();
+  } else {
+    document.getElementById('studyTabs').classList.add('hidden');
+    document.getElementById('topicPlaceholder').classList.add('hidden');
+    document.getElementById('studyContent').classList.add('hidden');
+    document.getElementById('chatContent').classList.remove('hidden');
+    renderChapterChat();
+  }
+}
+
+function setActiveMode(mode) {
+  document.getElementById('modeStudy').classList.toggle('active', mode === 'study');
+  document.getElementById('modeChat').classList.toggle('active', mode === 'chat');
+}
+
+function setTab(tab) {
+  currentTab = tab;
+  setActiveTab(tab);
+  if (currentTopic) renderStudyTab();
+}
+
+function setActiveTab(tab) {
+  const tabs = document.querySelectorAll('.tab-btn');
+  const names = ['overview','flashcards','quiz','rapid'];
+  tabs.forEach((btn, i) => btn.classList.toggle('active', names[i] === tab));
+}
+
+// ── Study content ─────────────────────────────────────────────────────────────
+function renderStudyTab() {
+  document.getElementById('topicPlaceholder').classList.add('hidden');
+  document.getElementById('studyContent').classList.remove('hidden');
+  document.getElementById('chatContent').classList.add('hidden');
+  const container = document.getElementById('studyContent');
+
+  if (currentTab === 'overview') renderOverview(container);
+  else if (currentTab === 'flashcards') renderFlashcards(container);
+  else if (currentTab === 'quiz') renderQuiz(container);
+  else if (currentTab === 'rapid') renderRapidReview(container);
+}
+
+function renderOverview(container) {
+  const cached = overviewCache[currentTopic.id];
+  if (cached) {
+    container.innerHTML = `<div class="overview-content">${cached}</div>`;
+    return;
+  }
+  container.innerHTML = `
+    <div class="topic-placeholder">
+      <div class="icon">📖</div>
+      <h3>${currentTopic.title}</h3>
+      <p>${currentTopic.subtitle}</p>
+      <button class="gen-btn" onclick="generateOverview()">Generate Study Module</button>
+    </div>`;
+}
+
+async function generateOverview() {
+  if (isGenerating) return;
+  isGenerating = true;
+  const container = document.getElementById('studyContent');
+  container.innerHTML = '<div class="overview-content" id="overviewText"></div>';
+  const el = document.getElementById('overviewText');
+  el.innerHTML = '<div class="streaming-cursor"></div>';
+
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chapterId: currentChapter.id, topicId: currentTopic.id, topicTitle: currentTopic.title })
     });
-
-    let dragCounter = 0;
-    document.addEventListener('dragenter', function(e) {
-      e.preventDefault();
-      dragCounter++;
-      dropOverlay.classList.add('active');
+    let raw = '';
+    await readSSE(res, chunk => {
+      if (chunk.text) { raw += chunk.text; el.innerHTML = marked.parse(raw) + '<span class="streaming-cursor"></span>'; el.parentElement.scrollTop = el.parentElement.scrollHeight; }
     });
-    document.addEventListener('dragleave', function(e) {
-      e.preventDefault();
-      dragCounter--;
-      if (dragCounter === 0) dropOverlay.classList.remove('active');
-    });
-    document.addEventListener('dragover', function(e) { e.preventDefault(); });
-    document.addEventListener('drop', async function(e) {
-      e.preventDefault();
-      dragCounter = 0;
-      dropOverlay.classList.remove('active');
-      if (e.target.closest('.dropzone')) return;
-      uploadFiles(await getFilesFromTransfer(e.dataTransfer));
-    });
+    el.innerHTML = marked.parse(raw);
+    overviewCache[currentTopic.id] = el.innerHTML;
+  } catch (e) {
+    el.innerHTML = `<p style="color:#ef4444">Error: ${e.message}</p>`;
+  }
+  isGenerating = false;
+}
 
-    async function getFilesFromTransfer(dataTransfer) {
-      const allowed = ['.pdf','.txt','.md','.csv','.html','.json','.doc','.docx'];
-      const files = [];
-      const items = dataTransfer.items;
-      if (items && items.length && items[0].webkitGetAsEntry) {
-        const entries = [];
-        for (let i = 0; i < items.length; i++) {
-          const entry = items[i].webkitGetAsEntry();
-          if (entry) entries.push(entry);
-        }
-        await Promise.all(entries.map(e => collectFiles(e, files, allowed)));
-      } else {
-        for (let i = 0; i < dataTransfer.files.length; i++) files.push(dataTransfer.files[i]);
-      }
-      return files;
+function renderRapidReview(container) {
+  const cached = overviewCache[currentTopic.id];
+  if (!cached) {
+    container.innerHTML = `<div class="topic-placeholder"><div class="icon">⚡</div><h3>Generate Overview First</h3><p>Rapid Review extracts from the Overview. Generate the Overview tab first.</p><button class="gen-btn" onclick="setTab('overview');generateOverview()">Generate Overview</button></div>`;
+    return;
+  }
+  // Extract RAPID REVIEW section
+  const tmp = document.createElement('div');
+  tmp.innerHTML = cached;
+  let inRapid = false, sections = [];
+  tmp.querySelectorAll('h2, h3, p, ul, ol, li').forEach(el => {
+    if (el.tagName === 'H2' && el.textContent.includes('RAPID REVIEW')) { inRapid = true; }
+    else if (el.tagName === 'H2' && inRapid) { inRapid = false; }
+    if (inRapid) sections.push(el.outerHTML);
+  });
+  if (!sections.length) {
+    container.innerHTML = `<div class="topic-placeholder"><div class="icon">⚡</div><h3>No Rapid Review found</h3><p>Regenerate the Overview to get a Rapid Review section.</p></div>`;
+    return;
+  }
+  container.innerHTML = `<div class="overview-content"><h2>⚡ Rapid Review — ${currentTopic.title}</h2>${sections.join('')}</div>`;
+}
+
+// ── Flashcards ────────────────────────────────────────────────────────────────
+function renderFlashcards(container) {
+  const cached = flashcardsCache[currentTopic.id];
+  if (!cached) {
+    container.innerHTML = `<div class="topic-placeholder"><div class="icon">🃏</div><h3>Flashcards</h3><p>Generate 20 AI flashcards for this topic.</p><button class="gen-btn" onclick="generateFlashcards()">Generate Flashcards</button></div>`;
+    return;
+  }
+  fcIndex = Math.min(fcIndex, cached.length - 1);
+  const fc = cached[fcIndex];
+  container.innerHTML = `
+    <div class="flashcards-wrap">
+      <div class="fc-controls">
+        <div class="fc-nav">
+          <button onclick="fcNav(-1)">←</button>
+          <span class="fc-counter">${fcIndex + 1} / ${cached.length}</span>
+          <button onclick="fcNav(1)">→</button>
+        </div>
+        <span class="fc-diff ${fc.difficulty}">${fc.difficulty}</span>
+        <button class="gen-btn" style="padding:5px 12px;font-size:12px;" onclick="flashcardsCache[currentTopic.id]=null;renderFlashcards(document.getElementById('studyContent'))">Regenerate</button>
+      </div>
+      <div class="card-scene" onclick="document.getElementById('card3d').classList.toggle('flipped')">
+        <div class="card-3d" id="card3d">
+          <div class="card-face card-front">
+            <div class="card-label">Question</div>
+            <div class="card-text">${fc.question}</div>
+            <div class="card-hint">Click to reveal answer</div>
+          </div>
+          <div class="card-face card-back">
+            <div class="card-label">Answer</div>
+            <div class="card-text">${fc.answer}</div>
+          </div>
+        </div>
+      </div>
+      <p style="text-align:center;font-size:12px;color:var(--text-dim);margin-top:12px;">Use arrow keys or click arrows to navigate</p>
+    </div>`;
+}
+
+async function generateFlashcards() {
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = 'Generating…';
+  try {
+    const res = await fetch('/api/flashcards', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ chapterId: currentChapter.id, topicId: currentTopic.id, topicTitle: currentTopic.title }) });
+    flashcardsCache[currentTopic.id] = await res.json();
+    fcIndex = 0;
+    renderFlashcards(document.getElementById('studyContent'));
+  } catch (e) { btn.disabled = false; btn.textContent = 'Generate Flashcards'; }
+}
+
+function fcNav(dir) {
+  const cached = flashcardsCache[currentTopic.id];
+  if (!cached) return;
+  fcIndex = (fcIndex + dir + cached.length) % cached.length;
+  renderFlashcards(document.getElementById('studyContent'));
+}
+
+document.addEventListener('keydown', e => {
+  if (currentTab === 'flashcards' && currentMode === 'study') {
+    if (e.key === 'ArrowLeft') fcNav(-1);
+    if (e.key === 'ArrowRight') fcNav(1);
+    if (e.key === ' ') { e.preventDefault(); document.getElementById('card3d')?.classList.toggle('flipped'); }
+  }
+});
+
+// ── Quiz ──────────────────────────────────────────────────────────────────────
+function renderQuiz(container) {
+  const cached = quizCache[currentTopic.id];
+  if (!cached) {
+    container.innerHTML = `<div class="topic-placeholder"><div class="icon">❓</div><h3>Quiz</h3><p>Generate a 12-question practice quiz for this topic.</p><button class="gen-btn" onclick="generateQuiz()">Generate Quiz</button></div>`;
+    return;
+  }
+  if (quizSubmitted) { renderQuizScore(container, cached); return; }
+  container.innerHTML = `<div class="quiz-wrap">${cached.map((q, qi) => renderQuizQuestion(q, qi)).join('')}<button class="quiz-submit" id="quizSubmit" onclick="submitQuiz()" disabled>Submit Quiz</button></div>`;
+}
+
+function renderQuizQuestion(q, qi) {
+  const opts = (q.options || ['True', 'False']).map((opt, oi) => `<button class="quiz-opt" onclick="selectAnswer(${qi},${oi},'${escHtml(opt)}')" data-qi="${qi}" data-oi="${oi}">${opt}</button>`).join('');
+  return `<div class="quiz-q" id="qq-${qi}"><div class="quiz-q-header"><span class="quiz-q-num">Q${qi+1}</span><span class="quiz-q-type">${q.type?.replace('_',' ')||'question'}</span></div><div class="quiz-q-text">${q.question}</div><div class="quiz-options">${opts}</div><div class="quiz-explain" id="qex-${qi}">${q.explanation||''}</div></div>`;
+}
+
+function selectAnswer(qi, oi, val) {
+  quizAnswers[qi] = val;
+  document.querySelectorAll(`[data-qi="${qi}"]`).forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-qi="${qi}"][data-oi="${oi}"]`).style.borderColor = 'var(--accent)';
+  const cached = quizCache[currentTopic.id];
+  const allAnswered = cached.every((_, i) => quizAnswers[i] !== undefined);
+  document.getElementById('quizSubmit').disabled = !allAnswered;
+}
+
+function submitQuiz() {
+  quizSubmitted = true;
+  renderQuiz(document.getElementById('studyContent'));
+}
+
+function renderQuizScore(container, questions) {
+  let score = 0;
+  questions.forEach((q, qi) => { if (quizAnswers[qi] === q.answer) score++; });
+  const pct = Math.round(score / questions.length * 100);
+  const qHtml = questions.map((q, qi) => {
+    const userAns = quizAnswers[qi];
+    const correct = userAns === q.answer;
+    const opts = (q.options || ['True', 'False']).map(opt => {
+      let cls = '';
+      if (opt === q.answer) cls = 'correct';
+      else if (opt === userAns && !correct) cls = 'wrong';
+      return `<button class="quiz-opt ${cls}" disabled>${opt}</button>`;
+    }).join('');
+    return `<div class="quiz-q" id="qq-${qi}"><div class="quiz-q-header"><span class="quiz-q-num">Q${qi+1} ${correct?'✓':'✗'}</span></div><div class="quiz-q-text">${q.question}</div><div class="quiz-options">${opts}</div><div class="quiz-explain show">${q.explanation||''}</div></div>`;
+  }).join('');
+  container.innerHTML = `<div class="quiz-wrap"><div class="quiz-score"><div class="score-num">${pct}%</div><div class="score-label">${score} / ${questions.length} correct</div><button class="quiz-submit" style="margin-top:16px;" onclick="quizAnswers={};quizSubmitted=false;quizCache[currentTopic.id]=null;renderQuiz(document.getElementById('studyContent'))">Try Again</button></div>${qHtml}</div>`;
+}
+
+async function generateQuiz() {
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = 'Generating…';
+  try {
+    const res = await fetch('/api/quiz', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ chapterId: currentChapter.id, topicId: currentTopic.id, topicTitle: currentTopic.title }) });
+    quizCache[currentTopic.id] = await res.json();
+    quizAnswers = {}; quizSubmitted = false;
+    renderQuiz(document.getElementById('studyContent'));
+  } catch (e) { btn.disabled = false; btn.textContent = 'Generate Quiz'; }
+}
+
+// ── Chapter Chat ──────────────────────────────────────────────────────────────
+function renderChapterChat() {
+  const msgs = document.getElementById('chapterChatMessages');
+  if (!chapterChatMessages.length) {
+    msgs.innerHTML = `<div style="text-align:center;color:var(--text-dim);padding:40px 20px;"><div style="font-size:32px;margin-bottom:12px;">💬</div><div>Ask questions about <strong>${currentChapter.title}</strong></div></div>`;
+  } else {
+    msgs.innerHTML = chapterChatMessages.map(renderMsg).join('');
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+}
+
+async function sendChapterChat() {
+  const input = document.getElementById('chapterChatInput');
+  const text = input.value.trim();
+  if (!text || isGenerating) return;
+  chapterChatMessages.push({ role: 'user', content: text });
+  input.value = ''; autoResize(input);
+  renderChapterChat();
+  isGenerating = true;
+  document.getElementById('chapterChatSend').disabled = true;
+  const msgs = document.getElementById('chapterChatMessages');
+  const loadEl = addLoadingMsg(msgs);
+  try {
+    const res = await fetch('/api/chat', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ chapterId: currentChapter.id, messages: chapterChatMessages }) });
+    let reply = '';
+    await readSSE(res, chunk => { if (chunk.text) { reply += chunk.text; loadEl.querySelector('.msg-bubble').innerHTML = marked.parse(reply); msgs.scrollTop = msgs.scrollHeight; } });
+    loadEl.remove();
+    chapterChatMessages.push({ role: 'assistant', content: reply });
+    renderChapterChat();
+  } catch (e) { loadEl.remove(); }
+  isGenerating = false;
+  document.getElementById('chapterChatSend').disabled = false;
+}
+
+function chapterChatKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChapterChat(); } }
+
+// ── General Chat ──────────────────────────────────────────────────────────────
+async function sendGenChat() {
+  const input = document.getElementById('genChatInput');
+  const text = input.value.trim();
+  if (!text || isGenerating) return;
+  genChatMessages.push({ role: 'user', content: text });
+  input.value = ''; autoResize(input);
+  renderGenChat();
+  isGenerating = true;
+  document.getElementById('genChatSend').disabled = true;
+  const msgs = document.getElementById('genChatMessages');
+  const loadEl = addLoadingMsg(msgs);
+  try {
+    const res = await fetch('/api/general-chat', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messages: genChatMessages }) });
+    let reply = '';
+    await readSSE(res, chunk => { if (chunk.text) { reply += chunk.text; loadEl.querySelector('.msg-bubble').innerHTML = marked.parse(reply); msgs.scrollTop = msgs.scrollHeight; } });
+    loadEl.remove();
+    genChatMessages.push({ role: 'assistant', content: reply });
+    renderGenChat();
+  } catch (e) { loadEl.remove(); }
+  isGenerating = false;
+  document.getElementById('genChatSend').disabled = false;
+}
+
+function renderGenChat() {
+  const msgs = document.getElementById('genChatMessages');
+  if (!genChatMessages.length) { msgs.innerHTML = ''; return; }
+  msgs.innerHTML = genChatMessages.map(renderMsg).join('');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function genChatKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendGenChat(); } }
+
+function renderMsg(m) {
+  const isUser = m.role === 'user';
+  const avatar = isUser ? '<div class="msg-avatar user-av">👤</div>' : '<div class="msg-avatar ai-av">🔥</div>';
+  const bubble = `<div class="msg-bubble">${isUser ? escHtml(m.content) : marked.parse(m.content)}</div>`;
+  return `<div class="chat-msg ${m.role}">${avatar}<div>${bubble}</div></div>`;
+}
+
+function addLoadingMsg(container) {
+  const el = document.createElement('div');
+  el.className = 'chat-msg assistant';
+  el.innerHTML = '<div class="msg-avatar ai-av">🔥</div><div><div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div></div>';
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+  return el;
+}
+
+// ── Notes ─────────────────────────────────────────────────────────────────────
+async function loadNotes() {
+  const res = await fetch('/api/notes');
+  const notes = await res.json();
+  renderNotes(notes);
+}
+
+function renderNotes(notes) {
+  const grid = document.getElementById('notesGrid');
+  if (!notes.length) { grid.innerHTML = '<p style="color:var(--text-dim)">No notes yet. Create your first note.</p>'; return; }
+  grid.innerHTML = notes.map(n => `
+    <div class="note-card" onclick="openNoteModal('${n.id}')">
+      <div class="note-card-color" style="background:${n.color}"></div>
+      <div class="note-card-title">${escHtml(n.title)}</div>
+      <div class="note-card-content">${escHtml(n.content)}</div>
+      <div class="note-card-date">${new Date(n.updatedAt).toLocaleDateString()}</div>
+    </div>`).join('');
+}
+
+async function openNoteModal(id) {
+  editingNoteId = id || null;
+  document.getElementById('noteModalTitle').textContent = id ? 'Edit Note' : 'New Note';
+  document.getElementById('noteDeleteBtn').style.display = id ? 'inline-flex' : 'none';
+  if (id) {
+    const res = await fetch('/api/notes');
+    const notes = await res.json();
+    const note = notes.find(n => n.id === id);
+    if (note) { document.getElementById('noteTitleInput').value = note.title; document.getElementById('noteContentInput').value = note.content; }
+  } else {
+    document.getElementById('noteTitleInput').value = '';
+    document.getElementById('noteContentInput').value = '';
+  }
+  openModal('noteModal');
+}
+
+async function saveNote() {
+  const title = document.getElementById('noteTitleInput').value.trim() || 'Untitled';
+  const content = document.getElementById('noteContentInput').value;
+  if (editingNoteId) {
+    await fetch('/api/notes/' + editingNoteId, { method: 'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title, content }) });
+  } else {
+    await fetch('/api/notes', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title, content }) });
+  }
+  closeModal('noteModal');
+  loadNotes();
+}
+
+async function deleteCurrentNote() {
+  if (!editingNoteId || !confirm('Delete this note?')) return;
+  await fetch('/api/notes/' + editingNoteId, { method: 'DELETE' });
+  closeModal('noteModal');
+  loadNotes();
+}
+
+// ── Sources ───────────────────────────────────────────────────────────────────
+function setupSourceDrop() {
+  const dz = document.getElementById('sourceDropZone');
+  const fi = document.getElementById('sourceFileInput');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); uploadSourceFiles(e.dataTransfer.files); });
+  fi.addEventListener('change', () => { uploadSourceFiles(fi.files); fi.value = ''; });
+}
+
+async function openSourcesModal() {
+  if (!currentChapter) return;
+  openModal('sourcesModal');
+  await loadSources();
+}
+
+async function loadSources() {
+  const res = await fetch('/api/sources/' + currentChapter.id);
+  const sources = await res.json();
+  const list = document.getElementById('sourceList');
+  if (!sources.length) { list.innerHTML = '<p style="color:var(--text-dim);font-size:13px;">No sources added yet.</p>'; return; }
+  list.innerHTML = sources.map(s => `
+    <div class="source-item">
+      <span class="source-item-icon">${s.type === 'url' ? '🌐' : '📄'}</span>
+      <span class="source-item-name">${escHtml(s.name)}</span>
+      <span class="source-item-size">${Math.round(s.textLength/1000)}k chars</span>
+      <button class="source-item-del" onclick="deleteSource('${s.id}')">✕</button>
+    </div>`).join('');
+}
+
+async function uploadSourceFiles(files) {
+  for (const file of files) {
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      await fetch('/api/sources/' + currentChapter.id + '/upload', { method: 'POST', body: fd });
+    } catch (e) { console.error(e); }
+  }
+  loadSources();
+}
+
+async function addSourceUrl() {
+  const url = document.getElementById('sourceUrlInput').value.trim();
+  if (!url) return;
+  try {
+    await fetch('/api/sources/' + currentChapter.id + '/url', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url }) });
+    document.getElementById('sourceUrlInput').value = '';
+    loadSources();
+  } catch (e) { alert('Failed to add URL: ' + e.message); }
+}
+
+async function deleteSource(id) {
+  await fetch('/api/sources/' + currentChapter.id + '/' + id, { method: 'DELETE' });
+  loadSources();
+}
+
+// ── Add Topic ─────────────────────────────────────────────────────────────────
+function openAddTopicModal() { document.getElementById('newTopicTitle').value=''; document.getElementById('newTopicSub').value=''; openModal('addTopicModal'); }
+
+async function addTopic() {
+  const title = document.getElementById('newTopicTitle').value.trim();
+  if (!title) return;
+  await fetch('/api/chapters/' + currentChapter.id + '/topics', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title, subtitle: document.getElementById('newTopicSub').value.trim() }) });
+  closeModal('addTopicModal');
+  loadTopics(currentChapter.id);
+}
+
+// ── Sidebar toggle ────────────────────────────────────────────────────────────
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('mobile-open'); }
+
+// ── SSE helper ────────────────────────────────────────────────────────────────
+async function readSSE(res, onChunk) {
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const payload = line.slice(6).trim();
+      if (payload === '[DONE]') return;
+      try { onChunk(JSON.parse(payload)); } catch {}
     }
+  }
+}
 
-    async function collectFiles(entry, files, allowed) {
-      if (entry.isFile) {
-        await new Promise(resolve => {
-          entry.file(file => {
-            const ext = '.' + file.name.split('.').pop().toLowerCase();
-            if (allowed.includes(ext)) files.push(file);
-            resolve();
-          }, resolve);
-        });
-      } else if (entry.isDirectory) {
-        const reader = entry.createReader();
-        let batch;
-        do {
-          batch = await new Promise((resolve, reject) => reader.readEntries(resolve, reject));
-          await Promise.all(batch.map(e => collectFiles(e, files, allowed)));
-        } while (batch.length > 0);
-      }
-    }
+// ── Modal helpers ─────────────────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('modal-overlay')) closeModal(e.target.id);
+});
 
-    async function uploadFiles(fileList) {
-      if (!fileList || fileList.length === 0) return;
-
-      var formData = new FormData();
-      for (var i = 0; i < fileList.length; i++) {
-        formData.append('files', fileList[i]);
-      }
-
-      showStatus('active', 'Uploading ' + fileList.length + ' file(s)...');
-
-      try {
-        var res = await fetch('/api/upload', { method: 'POST', body: formData });
-        var data = await res.json();
-
-        var succeeded = data.results.filter(function(r) { return r.success; });
-        var failed = data.results.filter(function(r) { return !r.success; });
-
-        if (succeeded.length > 0) {
-          showStatus('success', succeeded.length + ' file(s) uploaded and extracted');
-        }
-        if (failed.length > 0) {
-          showStatus('error', failed.length + ' file(s) failed');
-        }
-
-        await loadDocuments();
-        fileInput.value = '';
-
-        setTimeout(function() { uploadStatus.className = 'upload-status'; }, 4000);
-      } catch (e) {
-        showStatus('error', 'Upload failed: ' + e.message);
-      }
-    }
-
-    function showStatus(type, text) {
-      uploadStatus.className = 'upload-status ' + type;
-      uploadStatus.textContent = text;
-    }
-
-    function sendQuick(text) {
-      document.getElementById('chatInput').value = text;
-      sendMessage();
-    }
-
-    async function sendMessage() {
-      var input = document.getElementById('chatInput');
-      var text = input.value.trim();
-      if (!text || isLoading) return;
-
-      document.getElementById('welcome').style.display = 'none';
-      document.getElementById('messages').style.display = 'block';
-
-      messages.push({ role: 'user', content: text });
-      renderMessages();
-      input.value = '';
-      autoResize(input);
-
-      isLoading = true;
-      document.getElementById('sendBtn').disabled = true;
-      appendLoading();
-
-      try {
-        var res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: messages, selectedDocs: [] })
-        });
-        var data = await res.json();
-
-        removeLoading();
-        messages.push({ role: 'assistant', content: data.reply || data.error || 'No response' });
-        renderMessages();
-      } catch (e) {
-        removeLoading();
-        messages.push({ role: 'assistant', content: 'Error: ' + e.message });
-        renderMessages();
-      }
-
-      isLoading = false;
-      document.getElementById('sendBtn').disabled = false;
-    }
-
-    function renderMessages() {
-      var container = document.getElementById('messages');
-      container.innerHTML = messages.map(function(m) {
-        return '<div class="message">' +
-          '<div class="msg-avatar ' + m.role + '">' + (m.role === 'user' ? '👤' : '🔥') + '</div>' +
-          '<div class="msg-body">' +
-            '<div class="msg-role">' + (m.role === 'user' ? 'You' : 'SafetyNomad') + '</div>' +
-            '<div class="msg-content">' + formatMarkdown(m.content) + '</div>' +
-          '</div>' +
-        '</div>';
-      }).join('');
-      container.scrollTop = container.scrollHeight;
-    }
-
-    function appendLoading() {
-      var container = document.getElementById('messages');
-      var el = document.createElement('div');
-      el.className = 'message';
-      el.id = 'loading-msg';
-      el.innerHTML = '<div class="msg-avatar assistant">🔥</div>' +
-        '<div class="msg-body">' +
-          '<div class="msg-role">SafetyNomad</div>' +
-          '<div class="typing"><span></span><span></span><span></span></div>' +
-        '</div>';
-      container.appendChild(el);
-      container.scrollTop = container.scrollHeight;
-    }
-
-    function removeLoading() {
-      var el = document.getElementById('loading-msg');
-      if (el) el.remove();
-    }
-
-    function clearChat() {
-      messages = [];
-      document.getElementById('messages').style.display = 'none';
-      document.getElementById('messages').innerHTML = '';
-      document.getElementById('welcome').style.display = 'flex';
-    }
-
-    function formatMarkdown(text) {
-      if (!text) return '';
-      return text
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.+?)\*/g, '<em>$1</em>')
-        .replace(/`(.+?)`/g, '<code>$1</code>')
-        .replace(/^### (.+)$/gm, '<h4>$1</h4>')
-        .replace(/^## (.+)$/gm, '<h3>$1</h3>')
-        .replace(/^\d+\.\s(.+)$/gm, '<li>$1</li>')
-        .replace(/^[-•]\s(.+)$/gm, '<li>$1</li>')
-        .replace(/\n\n/g, '</p><p>')
-        .replace(/\n/g, '<br>')
-        .replace(/^/, '<p>')
-        .replace(/$/, '</p>');
-    }
-
-    function handleKeyDown(e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    }
-
-    function autoResize(el) {
-      el.style.height = 'auto';
-      el.style.height = Math.min(el.scrollHeight, 160) + 'px';
-    }
-
-    function toggleSidebar() {
-      document.getElementById('sidebar').classList.toggle('open');
-    }
-  </script>
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 140) + 'px'; }
+</script>
 </body>
 </html>
