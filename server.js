@@ -169,7 +169,10 @@ const DEFAULT_TOPICS = {
   ],
 };
 
-if (!existsSync(join(dataDir, 'topics.json'))) saveJSON('topics.json', DEFAULT_TOPICS);
+// Seed any missing courses into topics.json without overwriting existing customizations
+const savedTopics = loadJSON('topics.json', {});
+const mergedTopics = { ...DEFAULT_TOPICS, ...savedTopics };
+saveJSON('topics.json', mergedTopics);
 
 function openSSE(res) {
   res.setHeader('Content-Type', 'text/event-stream');
