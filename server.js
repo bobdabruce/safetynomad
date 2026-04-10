@@ -61,12 +61,50 @@ const CHAPTER_CONTEXT = {
 
 const GENERAL_CHAT_PROMPT = `You are SafetyNomad AI — Bob's personal AI assistant. Bob is a student in the University of Fredericton Safety Officer Training Program. Help with OHS study, general questions, daily tasks, and problem-solving. Be direct and efficient.`;
 
-function getSourceContext(chId) {
+const MAX_CONTEXT_CHARS = 80000; // safe budget for source material (~20k tokens)
+const CHARS_PER_SOURCE = 12000;  // per source when selecting by relevance
+
+function scoreRelevance(text, query) {
+  if (!query) return 0;
+  const q = query.toLowerCase();
+  const words = q.split(/\W+/).filter(w => w.length > 3);
+  const t = text.toLowerCase();
+  return words.reduce((n, w) => {
+    let pos = 0, count = 0;
+    while ((pos = t.indexOf(w, pos)) !== -1) { count++; pos++; }
+    return n + count;
+  }, 0);
+}
+
+function getSourceContext(chId, query) {
   const s = (loadJSON('sources.json', {}))[chId] || [];
   if (!s.length) return '';
-  return '\n\n─── UPLOADED MATERIAL ───\n' + s.map(x => `--- ${x.name} ---\n${x.text.slice(0, 15000)}`).join('\n\n');
+
+  let selected;
+  if (query && s.length > 5) {
+    // Score each source for relevance to the query, pick the best ones that fit budget
+    const scored = s.map(x => ({ ...x, score: scoreRelevance(x.text, query) }))
+                    .sort((a, b) => b.score - a.score);
+    selected = [];
+    let budget = MAX_CONTEXT_CHARS;
+    for (const src of scored) {
+      if (budget <= 0) break;
+      const chunk = src.text.slice(0, Math.min(CHARS_PER_SOURCE, budget));
+      selected.push({ ...src, chunk });
+      budget -= chunk.length;
+    }
+  } else {
+    // ≤5 sources: include all, distribute budget evenly
+    const perSource = Math.min(CHARS_PER_SOURCE, Math.floor(MAX_CONTEXT_CHARS / s.length));
+    selected = s.map(x => ({ ...x, chunk: x.text.slice(0, perSource) }));
+  }
+
+  return '\n\n─── UPLOADED MATERIAL ───\n' +
+    selected.map(x => `--- ${x.name} ---\n${x.chunk}`).join('\n\n') +
+    (s.length > selected.length ? `\n\n[${s.length - selected.length} additional source(s) not shown — not relevant to this topic]` : '');
 }
-function buildSystemPrompt(chId) { return BASE_SYSTEM_PROMPT + (CHAPTER_CONTEXT[chId] || '') + getSourceContext(chId); }
+
+function buildSystemPrompt(chId, query) { return BASE_SYSTEM_PROMPT + (CHAPTER_CONTEXT[chId] || '') + getSourceContext(chId, query); }
 
 const CHAPTERS = [
   { id: 100, code: 'OHS 100', title: 'Introduction to OHS', description: 'Internal Responsibility System, worker and employer duties, right to refuse, JHSC, and Canadian OHS legislation overview.', color: '#94a3b8' },
@@ -272,7 +310,7 @@ app.post('/api/generate', async (q, res) => {
     const stream = anthropic.messages.stream({
       model: 'claude-sonnet-4-6',
       max_tokens: 8000,
-      system: buildSystemPrompt(chapterId),
+      system: buildSystemPrompt(chapterId, topicTitle),
       messages: [{ role: 'user', content: `Generate complete study module for Topic ${topicId}: "${topicTitle}". Include ALL sections. Canadian OHS context. Use uploaded material if available.` }]
     });
     stream.on('text', t => sseChunk(res, { text: t }));
@@ -287,7 +325,7 @@ app.post('/api/flashcards', async (q, res) => {
     const msg = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 4000,
-      system: `Canadian OHS prof. Output ONLY a JSON array of flashcard objects.\n${DISTRACTOR_QUALITY_RULE}\n${getSourceContext(chapterId)}`,
+      system: `Canadian OHS prof. Output ONLY a JSON array of flashcard objects.\n${DISTRACTOR_QUALITY_RULE}\n${getSourceContext(chapterId, topicTitle)}`,
       messages: [{ role: 'user', content: `20 flashcards for Topic ${topicId}: "${topicTitle}" (Ch ${chapterId}). Format: [{"id":1,"difficulty":"basic","question":"...","answer":"..."}]. 7 basic, 8 intermediate, 5 challenge. Use uploaded material. ONLY JSON array.` }]
     });
     const r = msg.content[0].text.trim(), m = r.match(/\[[\s\S]*\]/);
@@ -301,7 +339,7 @@ app.post('/api/quiz', async (q, res) => {
     const msg = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 4000,
-      system: `Canadian OHS prof generating a quiz. Output ONLY a JSON array.\n${DISTRACTOR_QUALITY_RULE}\n${getSourceContext(chapterId)}`,
+      system: `Canadian OHS prof generating a quiz. Output ONLY a JSON array.\n${DISTRACTOR_QUALITY_RULE}\n${getSourceContext(chapterId, topicTitle)}`,
       messages: [{ role: 'user', content: `12 quiz questions for Topic ${topicId}: "${topicTitle}" (Ch ${chapterId}). 4 multiple_choice, 4 true_false, 4 scenario. Format: {"id","type","difficulty","question","options":[],"answer","explanation"}. ONLY JSON array.` }]
     });
     const r = msg.content[0].text.trim(), m = r.match(/\[[\s\S]*\]/);
@@ -316,7 +354,7 @@ app.post('/api/chapters/:id/full-flashcards', async (q, res) => {
   try {
     const msg = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001', max_tokens: 6000,
-      system: `Canadian OHS prof. Output ONLY a JSON array of flashcard objects.\n${DISTRACTOR_QUALITY_RULE}\n${getSourceContext(id)}`,
+      system: `Canadian OHS prof. Output ONLY a JSON array of flashcard objects.\n${DISTRACTOR_QUALITY_RULE}\n${getSourceContext(id, topics)}`,
       messages: [{ role: 'user', content: `30 comprehensive flashcards covering ALL topics in Chapter ${id}: ${topics}. Format: [{"id":1,"difficulty":"basic","question":"...","answer":"..."}]. 10 basic, 12 intermediate, 8 challenge. ONLY JSON array.` }]
     });
     const r = msg.content[0].text.trim(), m = r.match(/\[[\s\S]*\]/);
@@ -330,7 +368,7 @@ app.post('/api/chapters/:id/full-quiz', async (q, res) => {
   try {
     const msg = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001', max_tokens: 6000,
-      system: `Canadian OHS prof generating a comprehensive course exam. Output ONLY a JSON array.\n${DISTRACTOR_QUALITY_RULE}\n${getSourceContext(id)}`,
+      system: `Canadian OHS prof generating a comprehensive course exam. Output ONLY a JSON array.\n${DISTRACTOR_QUALITY_RULE}\n${getSourceContext(id, topics)}`,
       messages: [{ role: 'user', content: `20 exam questions covering ALL topics in Chapter ${id}: ${topics}. Mix of multiple_choice, true_false, scenario. Format: {"id","type","difficulty","question","options":[],"answer","explanation"}. ONLY JSON array.` }]
     });
     const r = msg.content[0].text.trim(), m = r.match(/\[[\s\S]*\]/);
@@ -366,9 +404,10 @@ app.post('/api/program/quiz', async (_, res) => {
 
 app.post('/api/chat', async (q, res) => {
   const { chapterId, messages } = q.body;
+  const lastQuery = messages?.filter(m=>m.role==='user').pop()?.content || '';
   openSSE(res);
   try {
-    const stream = anthropic.messages.stream({ model: 'claude-sonnet-4-6', max_tokens: 2000, system: buildSystemPrompt(chapterId), messages });
+    const stream = anthropic.messages.stream({ model: 'claude-sonnet-4-6', max_tokens: 2000, system: buildSystemPrompt(chapterId, lastQuery), messages });
     stream.on('text', t => sseChunk(res, { text: t }));
     stream.on('finalMessage', () => sseDone(res));
     stream.on('error', e => { sseChunk(res, { error: e.message }); res.end(); });
