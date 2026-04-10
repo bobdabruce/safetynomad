@@ -543,10 +543,17 @@ nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--sur
 
 <script>
 // Configure marked: open all links in new tab
+// marked v5+ passes a token object {href,title,text}; older versions pass (href,title,text)
 (function() {
   const r = new marked.Renderer();
-  r.link = (href, title, text) => `<a href="${href}" target="_blank" rel="noopener noreferrer"${title ? ` title="${title}"` : ''}>${text}</a>`;
-  marked.setOptions({ renderer: r });
+  r.link = function(token) {
+    const href  = token && typeof token === 'object' ? token.href  : token;
+    const title = token && typeof token === 'object' ? token.title : arguments[1];
+    const text  = token && typeof token === 'object' ? (token.text || (token.tokens && marked.Parser ? marked.parser(token.tokens) : token.href)) : arguments[2];
+    if (!href) return text || '';
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer"${title ? ` title="${title}"` : ''}>${text || href}</a>`;
+  };
+  marked.use({ renderer: r });
 })();
 
 // ── State ─────────────────────────────────────────────────────────────────────
