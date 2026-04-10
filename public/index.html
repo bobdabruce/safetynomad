@@ -131,7 +131,8 @@ nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--sur
 .card-hint{margin-top:16px;font-size:12px;color:var(--text-dim);}
 
 /* ── Quiz ── */
-.quiz-wrap{max-width:680px;}
+.quiz-wrap{max-width:680px;padding-bottom:80px;}
+.quiz-submit-bar{position:sticky;bottom:0;background:var(--bg);padding:12px 0 16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:14px;}
 .quiz-q{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;}
 .quiz-q-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
 .quiz-q-num{font-size:12px;font-weight:700;color:var(--text-dim);}
@@ -544,6 +545,7 @@ async function openChapter(id) {
   const ch = chapters.find(c => c.id === id);
   if (!ch) return;
   currentChapter = { ...currentChapter, ...ch, color: ch.color || COLORS[id] || 'var(--accent)' };
+  isGenerating = false;
 
   document.getElementById('navChTitle').textContent = ch.title;
   document.getElementById('sidebarChTitle').textContent = ch.code + ' · ' + ch.title;
@@ -560,6 +562,7 @@ async function openProgramReview(tab) {
   currentChapter = { id: '__program__', title: 'Full Program Review', code: 'OHS 100-145', color: '#6366f1' };
   currentTopic = { id: '__program__', title: 'Full Program Review', subtitle: 'All 10 OHS courses' };
   currentMode = 'study';
+  isGenerating = false;
   chapterChatMessages = [];
   overviewCache = {};
   flashcardsCache = {};
@@ -604,6 +607,9 @@ async function loadTopics(chId) {
 
 function selectTopic(topic) {
   currentTopic = topic;
+  isGenerating = false;
+  quizAnswers = {};
+  quizSubmitted = false;
   document.querySelectorAll('.topic-item').forEach(el => el.classList.remove('active'));
   const el = document.getElementById('topic-' + topic.id);
   if (el) el.classList.add('active');
@@ -668,22 +674,12 @@ function renderStudyTab() {
 }
 
 function renderOverview(container) {
-  if (currentTopic.id === '__course__' || currentTopic.id === '__program__') {
-    container.innerHTML = `<div class="topic-placeholder"><div class="icon">📚</div><h3>${currentTopic.title}</h3><p>Use the Flashcards or Quiz tab to begin your review.</p></div>`;
-    return;
-  }
   const cached = overviewCache[currentTopic.id];
-  if (cached) {
-    container.innerHTML = `<div class="overview-content">${cached}</div>`;
-    return;
-  }
-  container.innerHTML = `
-    <div class="topic-placeholder">
-      <div class="icon">📖</div>
-      <h3>${currentTopic.title}</h3>
-      <p>${currentTopic.subtitle}</p>
-      <button class="gen-btn" onclick="generateOverview()">Generate Study Module</button>
-    </div>`;
+  if (cached) { container.innerHTML = `<div class="overview-content">${cached}</div>`; return; }
+  const isReview = currentTopic.id === '__course__' || currentTopic.id === '__program__';
+  const btnLabel = currentTopic.id === '__program__' ? 'Generate Program Overview' : isReview ? 'Generate Course Overview' : 'Generate Study Module';
+  const sub = currentTopic.id === '__program__' ? 'High-level overview across all 10 OHS courses.' : isReview ? 'Comprehensive overview covering all topics in this course.' : currentTopic.subtitle;
+  container.innerHTML = `<div class="topic-placeholder"><div class="icon">📖</div><h3>${currentTopic.title}</h3><p>${sub}</p><button class="gen-btn" onclick="generateOverview()">${btnLabel}</button></div>`;
 }
 
 async function generateOverview() {
@@ -713,10 +709,6 @@ async function generateOverview() {
 }
 
 function renderRapidReview(container) {
-  if (currentTopic.id === '__course__' || currentTopic.id === '__program__') {
-    container.innerHTML = `<div class="topic-placeholder"><div class="icon">📚</div><h3>${currentTopic.title}</h3><p>Use the Flashcards or Quiz tab to begin your review.</p></div>`;
-    return;
-  }
   const cached = overviewCache[currentTopic.id];
   if (!cached) {
     container.innerHTML = `<div class="topic-placeholder"><div class="icon">⚡</div><h3>Generate Overview First</h3><p>Rapid Review extracts from the Overview. Generate the Overview tab first.</p><button class="gen-btn" onclick="setTab('overview');generateOverview()">Generate Overview</button></div>`;
@@ -745,7 +737,7 @@ function renderFlashcards(container) {
     const isReview = currentTopic.id === '__course__' || currentTopic.id === '__program__';
     const count = currentTopic.id === '__program__' ? 40 : currentTopic.id === '__course__' ? 30 : 20;
     const label = isReview ? currentTopic.title : 'Flashcards';
-    container.innerHTML = `<div class="topic-placeholder"><div class="icon">🃏</div><h3>${label}</h3><p>Generate ${count} AI flashcards${isReview ? '' : ' for this topic'}.</p><button class="gen-btn" onclick="generateFlashcards()">Generate Flashcards</button></div>`;
+    container.innerHTML = `<div class="topic-placeholder"><div class="icon">🃏</div><h3>${label}</h3><p>Generate ${count} AI flashcards${isReview ? '' : ' for this topic'}.</p><button class="gen-btn" onclick="generateFlashcards(this)">Generate Flashcards</button></div>`;
     return;
   }
   fcIndex = Math.min(fcIndex, cached.length - 1);
@@ -778,8 +770,7 @@ function renderFlashcards(container) {
     </div>`;
 }
 
-async function generateFlashcards() {
-  const btn = event.target;
+async function generateFlashcards(btn) {
   btn.disabled = true; btn.textContent = 'Generating…';
   try {
     let url, body;
@@ -790,7 +781,7 @@ async function generateFlashcards() {
     flashcardsCache[currentTopic.id] = await res.json();
     fcIndex = 0;
     renderFlashcards(document.getElementById('studyContent'));
-  } catch (e) { btn.disabled = false; btn.textContent = 'Generate Flashcards'; }
+  } catch (e) { console.error(e); btn.disabled = false; btn.textContent = 'Generate Flashcards'; }
 }
 
 function fcNav(dir) {
@@ -815,11 +806,11 @@ function renderQuiz(container) {
     const isReview = currentTopic.id === '__course__' || currentTopic.id === '__program__';
     const count = currentTopic.id === '__program__' ? 30 : currentTopic.id === '__course__' ? 20 : 12;
     const label = isReview ? currentTopic.title : 'Quiz';
-    container.innerHTML = `<div class="topic-placeholder"><div class="icon">❓</div><h3>${label}</h3><p>Generate a ${count}-question practice quiz${isReview ? '' : ' for this topic'}.</p><button class="gen-btn" onclick="generateQuiz()">Generate Quiz</button></div>`;
+    container.innerHTML = `<div class="topic-placeholder"><div class="icon">❓</div><h3>${label}</h3><p>Generate a ${count}-question practice quiz${isReview ? '' : ' for this topic'}.</p><button class="gen-btn" onclick="generateQuiz(this)">Generate Quiz</button></div>`;
     return;
   }
   if (quizSubmitted) { renderQuizScore(container, cached); return; }
-  container.innerHTML = `<div class="quiz-wrap">${cached.map((q, qi) => renderQuizQuestion(q, qi)).join('')}<button class="quiz-submit" id="quizSubmit" onclick="submitQuiz()" disabled>Submit Quiz</button></div>`;
+  container.innerHTML = `<div class="quiz-wrap">${cached.map((q, qi) => renderQuizQuestion(q, qi)).join('')}<div class="quiz-submit-bar"><span id="quizProgress" style="font-size:13px;color:var(--text-dim);">0 / ${cached.length} answered</span><button class="quiz-submit" id="quizSubmit" onclick="submitQuiz()" disabled>Submit Quiz</button></div></div>`;
 }
 
 function renderQuizQuestion(q, qi) {
@@ -829,11 +820,15 @@ function renderQuizQuestion(q, qi) {
 
 function selectAnswer(qi, oi, val) {
   quizAnswers[qi] = val;
-  document.querySelectorAll(`[data-qi="${qi}"]`).forEach(b => b.classList.remove('active'));
+  document.querySelectorAll(`[data-qi="${qi}"]`).forEach(b => b.style.borderColor = '');
   document.querySelector(`[data-qi="${qi}"][data-oi="${oi}"]`).style.borderColor = 'var(--accent)';
   const cached = quizCache[currentTopic.id];
-  const allAnswered = cached.every((_, i) => quizAnswers[i] !== undefined);
-  document.getElementById('quizSubmit').disabled = !allAnswered;
+  const answered = Object.keys(quizAnswers).length;
+  const allAnswered = answered >= cached.length;
+  const submitBtn = document.getElementById('quizSubmit');
+  const progressEl = document.getElementById('quizProgress');
+  if (submitBtn) submitBtn.disabled = !allAnswered;
+  if (progressEl) progressEl.textContent = `${answered} / ${cached.length} answered`;
 }
 
 function submitQuiz() {
@@ -859,8 +854,7 @@ function renderQuizScore(container, questions) {
   container.innerHTML = `<div class="quiz-wrap"><div class="quiz-score"><div class="score-num">${pct}%</div><div class="score-label">${score} / ${questions.length} correct</div><button class="quiz-submit" style="margin-top:16px;" onclick="quizAnswers={};quizSubmitted=false;quizCache[currentTopic.id]=null;renderQuiz(document.getElementById('studyContent'))">Try Again</button></div>${qHtml}</div>`;
 }
 
-async function generateQuiz() {
-  const btn = event.target;
+async function generateQuiz(btn) {
   btn.disabled = true; btn.textContent = 'Generating…';
   try {
     let url, body;
