@@ -414,7 +414,7 @@ app.post('/api/chat', async (q, res) => {
   const lastQuery = messages?.filter(m=>m.role==='user').pop()?.content || '';
   openSSE(res);
   try {
-    const stream = anthropic.messages.stream({ model: 'claude-sonnet-4-6', max_tokens: 2000, system: buildSystemPrompt(chapterId, lastQuery), messages });
+    const stream = anthropic.messages.stream({ model: 'claude-haiku-4-5-20251001', max_tokens: 2000, system: buildSystemPrompt(chapterId, lastQuery), messages });
     stream.on('text', t => sseChunk(res, { text: t }));
     stream.on('finalMessage', () => sseDone(res));
     stream.on('error', e => { sseChunk(res, { error: e.message }); res.end(); });
@@ -444,7 +444,7 @@ app.post('/api/general-chat', async (q, res) => {
   const fc = mem.facts.length ? `\n\nThings you remember about Bob:\n${mem.facts.map(f => '- ' + f.text).join('\n')}` : '';
   openSSE(res);
   try {
-    const stream = anthropic.messages.stream({ model: 'claude-sonnet-4-6', max_tokens: 2000, system: GENERAL_CHAT_PROMPT + fc, messages });
+    const stream = anthropic.messages.stream({ model: 'claude-haiku-4-5-20251001', max_tokens: 2000, system: GENERAL_CHAT_PROMPT + fc, messages });
     stream.on('text', t => sseChunk(res, { text: t }));
     stream.on('finalMessage', () => sseDone(res));
     stream.on('error', e => { sseChunk(res, { error: e.message }); res.end(); });
