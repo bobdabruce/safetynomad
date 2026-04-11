@@ -182,6 +182,7 @@ nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--sur
 .chat-send{width:44px;height:44px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:18px;cursor:pointer;flex-shrink:0;transition:.15s;}
 .chat-send:hover{opacity:.9;}
 .chat-send:disabled{opacity:.4;cursor:not-allowed;}
+.chat-send.stop{background:#ef4444;font-size:14px;}
 .typing-dots{display:flex;gap:4px;padding:4px 0;}
 .typing-dots span{width:6px;height:6px;background:var(--accent);border-radius:50%;animation:bounce 1.2s infinite;}
 .typing-dots span:nth-child(2){animation-delay:.2s;}
@@ -390,7 +391,7 @@ nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--sur
           <div class="chat-input-area">
             <div class="chat-input-row">
               <textarea class="chat-textarea" id="chapterChatInput" placeholder="Ask about this chapter…" rows="1" onkeydown="chapterChatKey(event)" oninput="autoResize(this)"></textarea>
-              <button class="chat-send" id="chapterChatSend" onclick="sendChapterChat()">➤</button>
+              <button class="chat-send" id="chapterChatSend" onclick="chapterChatAction()">➤</button>
             </div>
           </div>
         </div>
@@ -408,7 +409,7 @@ nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--sur
     <div class="chat-input-area">
       <div class="chat-input-row">
         <textarea class="chat-textarea" id="genChatInput" placeholder="Ask anything…" rows="1" onkeydown="genChatKey(event)" oninput="autoResize(this)"></textarea>
-        <button class="chat-send" id="genChatSend" onclick="sendGenChat()">➤</button>
+        <button class="chat-send" id="genChatSend" onclick="genChatAction()">➤</button>
       </div>
     </div>
   </div>
@@ -814,7 +815,7 @@ async function generateOverview() {
     });
     let raw = '';
     await readSSE(res, chunk => {
-      if (chunk.text) { raw += chunk.text; el.innerHTML = marked.parse(raw) + '<span class="streaming-cursor"></span>'; el.parentElement.scrollTop = el.parentElement.scrollHeight; }
+      if (chunk.text) { raw += chunk.text; el.innerHTML = marked.parse(raw) + '<span class="streaming-cursor"></span>'; smartScroll(el.parentElement); }
     });
     el.innerHTML = marked.parse(raw);
     overviewCache[currentTopic.id] = el.innerHTML;
@@ -985,6 +986,37 @@ async function generateQuiz(btn) {
   } catch (e) { btn.disabled = false; btn.textContent = 'Generate Quiz'; }
 }
 
+// ── Abort controller ─────────────────────────────────────────────────────────
+let currentAbortController = null;
+
+function stopGeneration() {
+  if (currentAbortController) { currentAbortController.abort(); currentAbortController = null; }
+}
+
+function setSendBtn(id, mode) { // mode: 'send' | 'stop'
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  if (mode === 'stop') {
+    btn.textContent = '■'; btn.classList.add('stop'); btn.disabled = false;
+  } else {
+    btn.textContent = '➤'; btn.classList.remove('stop'); btn.disabled = false;
+  }
+}
+
+function chapterChatAction() {
+  if (isGenerating) { stopGeneration(); } else { sendChapterChat(); }
+}
+function genChatAction() {
+  if (isGenerating) { stopGeneration(); } else { sendGenChat(); }
+}
+
+// Smart auto-scroll: only scroll if user is near the bottom
+function smartScroll(el) {
+  const threshold = 80; // px from bottom
+  const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+  if (nearBottom) el.scrollTop = el.scrollHeight;
+}
+
 // ── Chapter Chat ──────────────────────────────────────────────────────────────
 function renderChapterChat() {
   const msgs = document.getElementById('chapterChatMessages');
@@ -1004,20 +1036,19 @@ async function sendChapterChat() {
   input.value = ''; autoResize(input);
   renderChapterChat();
   isGenerating = true;
-  const sendBtn = document.getElementById('chapterChatSend');
-  if (sendBtn) sendBtn.disabled = true;
+  currentAbortController = new AbortController();
+  setSendBtn('chapterChatSend', 'stop');
   const msgs = document.getElementById('chapterChatMessages');
   const loadEl = addLoadingMsg(msgs);
+  let reply = '';
   try {
-    const res = await fetch('/api/chat', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ chapterId: currentChapter.id, messages: chapterChatMessages }) });
-    let reply = '';
-    await readSSE(res, chunk => { if (chunk.text) { reply += chunk.text; loadEl.querySelector('.msg-bubble').innerHTML = marked.parse(reply); msgs.scrollTop = msgs.scrollHeight; } });
+    const res = await fetch('/api/chat', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ chapterId: currentChapter.id, messages: chapterChatMessages }), signal: currentAbortController.signal });
+    await readSSE(res, chunk => { if (chunk.text) { reply += chunk.text; loadEl.querySelector('.msg-bubble').innerHTML = marked.parse(reply); smartScroll(msgs); } });
+  } catch (e) { /* aborted or error */ } finally {
     loadEl.remove();
-    chapterChatMessages.push({ role: 'assistant', content: reply });
-    renderChapterChat();
-  } catch (e) { loadEl.remove(); } finally {
-    isGenerating = false;
-    if (sendBtn) sendBtn.disabled = false;
+    if (reply) { chapterChatMessages.push({ role: 'assistant', content: reply }); renderChapterChat(); }
+    isGenerating = false; currentAbortController = null;
+    setSendBtn('chapterChatSend', 'send');
   }
 }
 
@@ -1032,20 +1063,19 @@ async function sendGenChat() {
   input.value = ''; autoResize(input);
   renderGenChat();
   isGenerating = true;
-  const sendBtn = document.getElementById('genChatSend');
-  if (sendBtn) sendBtn.disabled = true;
+  currentAbortController = new AbortController();
+  setSendBtn('genChatSend', 'stop');
   const msgs = document.getElementById('genChatMessages');
   const loadEl = addLoadingMsg(msgs);
+  let reply = '';
   try {
-    const res = await fetch('/api/general-chat', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messages: genChatMessages }) });
-    let reply = '';
-    await readSSE(res, chunk => { if (chunk.text) { reply += chunk.text; loadEl.querySelector('.msg-bubble').innerHTML = marked.parse(reply); msgs.scrollTop = msgs.scrollHeight; } });
+    const res = await fetch('/api/general-chat', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ messages: genChatMessages }), signal: currentAbortController.signal });
+    await readSSE(res, chunk => { if (chunk.text) { reply += chunk.text; loadEl.querySelector('.msg-bubble').innerHTML = marked.parse(reply); smartScroll(msgs); } });
+  } catch (e) { /* aborted or error */ } finally {
     loadEl.remove();
-    genChatMessages.push({ role: 'assistant', content: reply });
-    renderGenChat();
-  } catch (e) { loadEl.remove(); } finally {
-    isGenerating = false;
-    if (sendBtn) sendBtn.disabled = false;
+    if (reply) { genChatMessages.push({ role: 'assistant', content: reply }); renderGenChat(); }
+    isGenerating = false; currentAbortController = null;
+    setSendBtn('genChatSend', 'send');
   }
 }
 
