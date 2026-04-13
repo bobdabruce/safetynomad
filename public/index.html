@@ -1781,21 +1781,29 @@ async function sidebarUpload(files) {
 (function setupGlobalDrop() {
   const overlay = document.getElementById('globalDropOverlay');
 
-  // preventDefault on BOTH dragenter and dragover — Chrome requires both
-  // to prevent opening the file in a new tab
+  function hasFiles(e) {
+    return [...(e.dataTransfer?.types || [])].some(t => t === 'Files' || t === 'application/x-moz-file');
+  }
+
+  // Both dragenter AND dragover must preventDefault — Chrome requires both
+  // to prevent opening the dropped file as a new tab
   document.addEventListener('dragenter', e => {
     e.preventDefault();
-    const hasFiles = [...(e.dataTransfer?.types || [])].some(t => t === 'Files' || t === 'application/x-moz-file');
-    if (hasFiles) overlay.classList.add('active');
+    if (hasFiles(e)) {
+      e.dataTransfer.dropEffect = 'copy';
+      overlay.classList.add('active');
+    }
   });
 
   document.addEventListener('dragover', e => {
     e.preventDefault();
-    const hasFiles = [...(e.dataTransfer?.types || [])].some(t => t === 'Files' || t === 'application/x-moz-file');
-    if (hasFiles) overlay.classList.add('active');
+    if (hasFiles(e)) {
+      e.dataTransfer.dropEffect = 'copy';
+      overlay.classList.add('active');
+    }
   });
 
-  // Hide overlay when drag leaves the window
+  // Hide overlay only when cursor leaves the browser window entirely
   document.addEventListener('dragleave', e => {
     if (!e.relatedTarget) overlay.classList.remove('active');
   });
@@ -1805,7 +1813,7 @@ async function sidebarUpload(files) {
     e.preventDefault();
     overlay.classList.remove('active');
 
-    // Let existing dedicated zone handlers do their thing
+    // Let dedicated zone handlers do their thing
     const inZone = e.target.closest?.('#sourceDropZone,#quickDropZone,#libraryDropZone');
     if (inZone) return;
 
@@ -1821,8 +1829,8 @@ async function sidebarUpload(files) {
       }
       const valid = files.filter(f => f.size > 0 && !f.name.startsWith('.'));
       if (!valid.length) return;
-      openModal('quickUploadModal');
-      processQuickFiles(valid);
+      openQuickUpload();       // resets state + opens modal
+      processQuickFiles(valid); // runs AI course detection
     } catch (err) {
       console.error('Global drop error:', err);
     }
