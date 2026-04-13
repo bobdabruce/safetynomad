@@ -1820,6 +1820,19 @@ async function sidebarUpload(files) {
     try {
       const items = [...(e.dataTransfer.items || [])];
       const entries = items.map(i => i.webkitGetAsEntry?.()).filter(Boolean);
+
+      // Folder drop → bulk import flow (preserves folder→course matching)
+      const hasFolder = entries.some(en => en?.isDirectory);
+      if (hasFolder) {
+        const all = await Promise.all(entries.map(en => collectFilesFromEntry(en, null, null)));
+        const valid = all.flat().filter(f => f.size > 0 && !f.name.startsWith('.'));
+        if (!valid.length) return;
+        openQuickUpload();
+        processQuickFiles(valid);
+        return;
+      }
+
+      // Single file or multi-file drop → always quick upload flow
       let files;
       if (entries.length) {
         const all = await Promise.all(entries.map(en => collectFilesFromEntry(en, null, null)));
@@ -1829,8 +1842,8 @@ async function sidebarUpload(files) {
       }
       const valid = files.filter(f => f.size > 0 && !f.name.startsWith('.'));
       if (!valid.length) return;
-      openQuickUpload();       // resets state + opens modal
-      processQuickFiles(valid); // runs AI course detection
+      openQuickUpload();
+      processQuickFiles(valid);
     } catch (err) {
       console.error('Global drop error:', err);
     }
