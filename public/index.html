@@ -1785,44 +1785,18 @@ async function sidebarUpload(files) {
     return [...(e.dataTransfer?.types || [])].some(t => t === 'Files' || t === 'application/x-moz-file');
   }
 
-  // Use capture phase on window so our handlers fire before Chrome's
-  // native file-navigation handler — this is what actually blocks Chrome
-  // from opening the dropped file as a new tab.
-  window.addEventListener('dragenter', e => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (hasFiles(e)) {
-      e.dataTransfer.dropEffect = 'copy';
-      overlay.classList.add('active');
-    }
-  }, { capture: true });
-
-  window.addEventListener('dragover', e => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (hasFiles(e)) {
-      e.dataTransfer.dropEffect = 'copy';
-      overlay.classList.add('active');
-    }
-  }, { capture: true });
-
-  // Hide overlay only when cursor leaves the browser window entirely
-  window.addEventListener('dragleave', e => {
-    if (!e.relatedTarget) overlay.classList.remove('active');
-  }, { capture: true });
-
-  // Handle drop anywhere on the page — capture phase so Chrome never sees it
-  window.addEventListener('drop', async e => {
-    e.preventDefault();
-    e.stopPropagation();
+  function showOverlay() {
+    overlay.classList.add('active');
+    overlay.style.pointerEvents = 'all'; // become a real drop target
+  }
+  function hideOverlay() {
     overlay.classList.remove('active');
+    overlay.style.pointerEvents = 'none';
+  }
 
-    // Let dedicated zone handlers do their thing
-    const inZone = e.target.closest?.('#sourceDropZone,#quickDropZone,#libraryDropZone');
-    if (inZone) return;
-
+  async function handleDropTransfer(dataTransfer) {
     try {
-      const items = [...(e.dataTransfer.items || [])];
+      const items = [...(dataTransfer.items || [])];
       const entries = items.map(i => i.webkitGetAsEntry?.()).filter(Boolean);
 
       // Folder drop → bulk import flow (preserves folder→course matching)
@@ -1836,13 +1810,13 @@ async function sidebarUpload(files) {
         return;
       }
 
-      // Single file or multi-file drop → always quick upload flow
+      // Single file or multi-file drop → quick upload flow
       let files;
       if (entries.length) {
         const all = await Promise.all(entries.map(en => collectFilesFromEntry(en, null, null)));
         files = all.flat();
       } else {
-        files = [...e.dataTransfer.files];
+        files = [...dataTransfer.files];
       }
       const valid = files.filter(f => f.size > 0 && !f.name.startsWith('.'));
       if (!valid.length) return;
@@ -1851,7 +1825,52 @@ async function sidebarUpload(files) {
     } catch (err) {
       console.error('Global drop error:', err);
     }
+  }
+
+  // Window capture: fire before Chrome's native file-open handler
+  window.addEventListener('dragenter', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (hasFiles(e)) { e.dataTransfer.dropEffect = 'copy'; showOverlay(); }
+  }, { capture: true, passive: false });
+
+  window.addEventListener('dragover', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (hasFiles(e)) { e.dataTransfer.dropEffect = 'copy'; showOverlay(); }
+  }, { capture: true, passive: false });
+
+  window.addEventListener('dragleave', e => {
+    if (!e.relatedTarget) hideOverlay();
   }, { capture: true });
+
+  // Overlay is now pointer-events:all when shown — handle drag directly on it
+  overlay.addEventListener('dragover', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+  });
+
+  overlay.addEventListener('dragleave', e => {
+    if (!overlay.contains(e.relatedTarget)) hideOverlay();
+  });
+
+  overlay.addEventListener('drop', async e => {
+    e.preventDefault();
+    e.stopPropagation();
+    hideOverlay();
+    await handleDropTransfer(e.dataTransfer);
+  });
+
+  // Window capture drop as backup for anything that misses the overlay
+  window.addEventListener('drop', async e => {
+    e.preventDefault();
+    e.stopPropagation();
+    hideOverlay();
+    const inZone = e.target.closest?.('#sourceDropZone,#quickDropZone,#libraryDropZone,#globalDropOverlay');
+    if (inZone) return;
+    await handleDropTransfer(e.dataTransfer);
+  }, { capture: true, passive: false });
 
   // Mobile floating button — file picker → same AI detection flow
   const floatInput = document.getElementById('floatFileInput');
