@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from 'fs';
 import { createRequire } from 'module';
 import multer from 'multer';
 
@@ -17,7 +17,9 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 // DATA_DIR is set to /app/data on Railway (persistent volume), ./data locally
 const dataDir = process.env.DATA_DIR || join(__dirname, 'data');
 const uploadDir = join(dataDir, 'uploads');
+const knowledgeDir = join(dataDir, 'knowledge');
 mkdirSync(uploadDir, { recursive: true });
+mkdirSync(knowledgeDir, { recursive: true });
 mkdirSync(dataDir, { recursive: true });
 
 const upload = multer({ dest: uploadDir, limits: { fileSize: 20 * 1024 * 1024 } });
@@ -277,11 +279,24 @@ app.post('/api/sources/:cid/upload', upload.single('file'), async (q, res) => {
   try {
     const txt = await extractText(q.file.path, q.file.originalname);
     if (!txt.trim()) throw new Error('No text extracted');
+    const cid = q.params.cid;
     const s = loadJSON('sources.json', {});
-    if (!s[q.params.cid]) s[q.params.cid] = [];
+    if (!s[cid]) s[cid] = [];
     const x = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: q.file.originalname, type: 'file', text: txt.slice(0, 100000), addedAt: new Date().toISOString() };
-    s[q.params.cid].push(x);
+    s[cid].push(x);
     saveJSON('sources.json', s);
+
+    // Save knowledge card
+    const card = {
+      title: q.file.originalname,
+      course: cid,
+      summary: txt.slice(0, 300),
+      createdAt: x.addedAt,
+      source: q.file.originalname
+    };
+    const cardFile = `${cid}_${q.file.originalname.replace(/\s+/g, '_')}.json`;
+    writeFileSync(join(knowledgeDir, cardFile), JSON.stringify(card, null, 2));
+
     res.json({ id: x.id, name: x.name, type: x.type, addedAt: x.addedAt, textLength: x.text.length });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
@@ -464,6 +479,15 @@ app.post('/api/detect-course', async (req, res) => {
     const r = msg.content[0].text.trim(), m = r.match(/\{[\s\S]*\}/);
     res.json(JSON.parse(m ? m[0] : r));
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ─── Knowledge cards ─────────────────────────────────────────────────────────
+app.get('/api/knowledge', (req, res) => {
+  const course = req.query.course;
+  const files = readdirSync(knowledgeDir).filter(f => f.endsWith('.json'));
+  let data = files.map(f => JSON.parse(readFileSync(join(knowledgeDir, f), 'utf-8')));
+  if (course) data = data.filter(item => item.course == course);
+  res.json(data);
 });
 
 // ─── Notes ───────────────────────────────────────────────────────────────────

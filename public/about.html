@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SafetyNomad — App Overview</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1117; color: #e2e8f0; line-height: 1.7; }
+    .page { max-width: 820px; margin: 0 auto; padding: 48px 24px 80px; }
+    h1 { font-size: 2rem; font-weight: 800; color: #ff5c26; margin-bottom: 6px; }
+    .subtitle { font-size: 1.1rem; color: #94a3b8; margin-bottom: 48px; }
+    h2 { font-size: 1.2rem; font-weight: 700; color: #ff5c26; margin: 40px 0 16px; border-bottom: 1px solid #1e2433; padding-bottom: 8px; }
+    h3 { font-size: 1rem; font-weight: 600; color: #e2e8f0; margin: 20px 0 8px; }
+    p { color: #cbd5e1; margin-bottom: 12px; }
+    ul, ol { padding-left: 20px; color: #cbd5e1; margin-bottom: 12px; }
+    li { margin-bottom: 6px; }
+    .course-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-top: 16px; }
+    .course-card { background: #1a1f2e; border-radius: 12px; padding: 16px 18px; border-left: 4px solid; }
+    .course-code { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+    .course-title { font-size: 14px; font-weight: 600; color: #e2e8f0; margin-bottom: 4px; }
+    .course-desc { font-size: 12px; color: #64748b; }
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin-top: 16px; }
+    .feature-card { background: #1a1f2e; border-radius: 12px; padding: 16px; }
+    .feature-icon { font-size: 24px; margin-bottom: 8px; }
+    .feature-title { font-size: 14px; font-weight: 600; color: #e2e8f0; margin-bottom: 4px; }
+    .feature-desc { font-size: 12px; color: #64748b; }
+    .tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; margin: 3px 3px 3px 0; }
+    .tech-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+    .badge { background: #1e2433; color: #94a3b8; font-size: 12px; padding: 4px 12px; border-radius: 20px; border: 1px solid #2d3748; }
+    a { color: #ff5c26; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .back { display: inline-block; margin-bottom: 32px; color: #64748b; font-size: 14px; }
+    .back:hover { color: #ff5c26; }
+    .info-box { background: #1a1f2e; border: 1px solid #2d3748; border-radius: 12px; padding: 20px 24px; margin: 16px 0; }
+    .info-box p { margin: 0; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <a href="/" class="back">← Back to App</a>
+
+  <h1>🔥 SafetyNomad</h1>
+  <p class="subtitle">AI-powered study platform for the University of Fredericton Safety Officer Training Program</p>
+
+  <div class="info-box">
+    <p><strong>Purpose:</strong> A personal OHS study tool that turns uploaded course materials — PDFs, DOCX files, legislation, standards — into interactive study sessions. Built for use on any device, at any jobsite, online or offline.</p>
+  </div>
+
+  <h2>The 10 OHS Courses</h2>
+  <p>The app covers the full University of Fredericton Safety Officer Training Program:</p>
+  <div class="course-grid">
+    <div class="course-card" style="border-color:#94a3b8">
+      <div class="course-code" style="color:#94a3b8">OHS 100</div>
+      <div class="course-title">Introduction to OHS</div>
+      <div class="course-desc">Internal Responsibility System, worker/employer duties, right to refuse, JHSC, Canadian OHS overview</div>
+    </div>
+    <div class="course-card" style="border-color:#fb7185">
+      <div class="course-code" style="color:#fb7185">OHS 105</div>
+      <div class="course-title">Organizational Development &amp; Behaviour</div>
+      <div class="course-desc">Workplace culture, team dynamics, motivation, change management, OHS integration</div>
+    </div>
+    <div class="course-card" style="border-color:#a78bfa">
+      <div class="course-code" style="color:#a78bfa">OHS 110</div>
+      <div class="course-title">Leadership and Communications</div>
+      <div class="course-desc">Safety leadership, communication strategies, worker engagement, behavior-based safety</div>
+    </div>
+    <div class="course-card" style="border-color:#f97316">
+      <div class="course-code" style="color:#f97316">OHS 115</div>
+      <div class="course-title">Incident Investigation &amp; Response</div>
+      <div class="course-desc">Root cause analysis, investigation methods, ICAM, reporting requirements, corrective actions</div>
+    </div>
+    <div class="course-card" style="border-color:#4ade80">
+      <div class="course-code" style="color:#4ade80">OHS 120</div>
+      <div class="course-title">Safety Training — Fundamental Principles</div>
+      <div class="course-desc">OHS foundations, hazard types, workplace inspections, safety culture, training design</div>
+    </div>
+    <div class="course-card" style="border-color:#34d399">
+      <div class="course-code" style="color:#34d399">OHS 125</div>
+      <div class="course-title">Safety Management Systems</div>
+      <div class="course-desc">SMS frameworks, ISO 45001, OHSAS 18001, PDCA cycle, auditing, continuous improvement</div>
+    </div>
+    <div class="course-card" style="border-color:#f59e0b">
+      <div class="course-code" style="color:#f59e0b">OHS 130</div>
+      <div class="course-title">Hazard ID, Risk Assessment &amp; Controls</div>
+      <div class="course-desc">WHMIS 2015, GHS, SDS, TDG, hierarchy of controls, risk matrices, spill response</div>
+    </div>
+    <div class="course-card" style="border-color:#e879f9">
+      <div class="course-code" style="color:#e879f9">OHS 135</div>
+      <div class="course-title">Law &amp; Ethics</div>
+      <div class="course-desc">Canadian OHS legislation, regulatory framework, ethical decision-making, due diligence</div>
+    </div>
+    <div class="course-card" style="border-color:#60a5fa">
+      <div class="course-code" style="color:#60a5fa">OHS 140</div>
+      <div class="course-title">Industrial / Occupational Hygiene</div>
+      <div class="course-desc">Chemical, physical, biological hazard recognition, TLVs/OELs, sampling, ventilation, PPE</div>
+    </div>
+    <div class="course-card" style="border-color:#ff5c26">
+      <div class="course-code" style="color:#ff5c26">OHS 145</div>
+      <div class="course-title">Fire Management</div>
+      <div class="course-desc">Fire behavior, prevention, hazard ID, emergency response, protection systems, Canadian law</div>
+    </div>
+  </div>
+
+  <h2>Features</h2>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📖</div>
+      <div class="feature-title">AI Study Modules</div>
+      <div class="feature-desc">Generates structured overviews from your uploaded materials with Key Concepts, Canadian scenarios, mnemonics, and a Rapid Review section.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🃏</div>
+      <div class="feature-title">Flashcards</div>
+      <div class="feature-desc">AI-generated flashcards per topic (20), per course (30), or full program (40). Flip with click, keyboard arrows, or swipe. Difficulty labeled.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">❓</div>
+      <div class="feature-title">Practice Quizzes</div>
+      <div class="feature-desc">Multiple-choice quizzes per topic (12Q), per course (20Q), or full program (30Q). Scored with explanations. Sticky submit bar.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-title">Rapid Review</div>
+      <div class="feature-desc">Auto-extracted bullet-point summary from the Overview — great for quick pre-exam review.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💬</div>
+      <div class="feature-title">Course Chat</div>
+      <div class="feature-desc">Ask questions about any course. AI answers using your uploaded materials as context. Stop button. Smart scroll — grab it to pause auto-scroll while reading.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🤖</div>
+      <div class="feature-title">General AI Assistant</div>
+      <div class="feature-desc">A general-purpose OHS assistant for questions outside specific courses — Canadian law, jobsite scenarios, study advice.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📂</div>
+      <div class="feature-title">Smart File Import</div>
+      <div class="feature-desc">Upload PDFs, DOCX, TXT, CSV. AI detects which course each file belongs to. Add files one-at-a-time or entire folders. Sources are per-course.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📝</div>
+      <div class="feature-title">Notes</div>
+      <div class="feature-desc">Personal notes stored per device. Create, edit, tag by course. Supports markdown.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎓</div>
+      <div class="feature-title">Full Program Review</div>
+      <div class="feature-desc">Cross-course flashcards and quizzes covering all 10 OHS courses. Tests overall program mastery.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📱</div>
+      <div class="feature-title">Mobile PWA</div>
+      <div class="feature-desc">Installable on iPhone and Android as a home screen app. Works offline. State is saved to local storage so switching apps doesn't lose your progress.</div>
+    </div>
+  </div>
+
+  <h2>How to Add Study Materials</h2>
+  <ol>
+    <li><strong>Click "＋ Add Files"</strong> in the top navigation bar at any time</li>
+    <li>Pick files (PDF, DOCX, TXT) or an entire folder</li>
+    <li>AI reads the filename and content, then detects which OHS course each file belongs to</li>
+    <li>Review the assignments, adjust if needed, then click <strong>Upload All</strong></li>
+    <li>Files are stored on the server and used as context for all AI study generation</li>
+  </ol>
+  <p>You can also add files to a specific course by opening the course and clicking <strong>Sources</strong> in the top-right.</p>
+
+  <h2>How Study Content is Generated</h2>
+  <p>When you click "Generate Study Module", "Generate Flashcards", or "Generate Quiz", the app:</p>
+  <ol>
+    <li>Scores all uploaded files for relevance to your topic using keyword matching</li>
+    <li>Selects the most relevant sources within an 80,000-character context budget</li>
+    <li>Sends the material to Claude AI with a structured prompt for that content type</li>
+    <li>Streams the result back in real time (you see it build word by word)</li>
+    <li>Caches the result locally so you never have to regenerate unless you want to</li>
+  </ol>
+
+  <h2>Legislation &amp; Standards Referenced</h2>
+  <p>The AI is instructed to hyperlink all legislation, standards, and regulatory bodies to their official websites, including:</p>
+  <div class="tech-row">
+    <span class="badge">National Fire Code of Canada</span>
+    <span class="badge">Canada Labour Code</span>
+    <span class="badge">WorkSafeBC</span>
+    <span class="badge">CSA Standards</span>
+    <span class="badge">WHMIS 2015 / GHS</span>
+    <span class="badge">ISO 45001</span>
+    <span class="badge">OHSAS 18001</span>
+    <span class="badge">TDG Regulations</span>
+    <span class="badge">Provincial OHS Acts</span>
+  </div>
+
+  <h2>Technical Stack</h2>
+  <div class="tech-row">
+    <span class="badge">Node.js + Express</span>
+    <span class="badge">Anthropic Claude API</span>
+    <span class="badge">Claude Sonnet (study content)</span>
+    <span class="badge">Claude Haiku (chat/flashcards)</span>
+    <span class="badge">Server-Sent Events (streaming)</span>
+    <span class="badge">Railway.app deployment</span>
+    <span class="badge">Persistent volume (Railway)</span>
+    <span class="badge">PWA + Service Worker</span>
+    <span class="badge">localStorage state persistence</span>
+    <span class="badge">pdf-parse + mammoth</span>
+    <span class="badge">marked.js</span>
+    <span class="badge">Vanilla JS SPA</span>
+  </div>
+
+  <h2>Deployment</h2>
+  <div class="info-box">
+    <p>Hosted on <strong>Railway.app</strong> with a persistent volume at <code>/app/data</code> for storing uploaded files, extracted text, course topics, and notes. Survives deploys and restarts.</p>
+  </div>
+
+  <h2>Built For</h2>
+  <p>University of Fredericton — Safety Officer Training Program students who need a comprehensive, mobile-ready study tool that works from any jobsite with or without a laptop.</p>
+
+  <br>
+  <a href="/">← Open the App</a>
+</div>
+</body>
+</html>

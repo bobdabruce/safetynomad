@@ -254,6 +254,19 @@ nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--sur
 .detect-confidence-medium{color:#fbbf24;}
 .detect-confidence-low{color:#f97316;}
 
+/* ── Global drop overlay ── */
+#globalDropOverlay{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .15s;}
+#globalDropOverlay.active{opacity:1;}
+.gdo-box{border:3px dashed var(--accent);border-radius:20px;padding:48px 64px;text-align:center;color:#fff;}
+.gdo-icon{font-size:56px;margin-bottom:16px;}
+.gdo-title{font-size:22px;font-weight:700;margin-bottom:8px;}
+.gdo-sub{font-size:14px;opacity:.7;}
+
+/* ── Floating upload button (mobile) ── */
+#floatUploadBtn{position:fixed;bottom:80px;right:16px;z-index:900;width:52px;height:52px;border-radius:50%;background:var(--accent);color:#fff;font-size:22px;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;transition:.2s;}
+#floatUploadBtn:active{transform:scale(.92);}
+@media(hover:hover){#floatUploadBtn{display:none;}} /* hide on desktop where drag-drop works */
+
 /* ── Library drop zone ── */
 .library-drop-zone{border:2px dashed var(--border);border-radius:14px;padding:24px;text-align:center;cursor:pointer;transition:.2s;margin:0 auto 32px;max-width:1000px;}
 .library-drop-zone:hover,.library-drop-zone.over{border-color:var(--accent);background:var(--accent-dim);}
@@ -306,6 +319,19 @@ nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--sur
 </head>
 <body>
 
+<!-- Floating upload button for mobile (drag-drop not supported on touch) -->
+<button id="floatUploadBtn" onclick="document.getElementById('floatFileInput').click()" title="Add files">+</button>
+<input type="file" id="floatFileInput" class="hidden" multiple accept=".pdf,.docx,.txt,.csv,.json,.md">
+
+<!-- Global drop overlay -->
+<div id="globalDropOverlay">
+  <div class="gdo-box">
+    <div class="gdo-icon">📂</div>
+    <div class="gdo-title">Drop files anywhere</div>
+    <div class="gdo-sub">AI will detect the right course for each file</div>
+  </div>
+</div>
+
 <!-- Nav -->
 <nav>
   <button class="nav-back" id="navBack" onclick="goBack()">← Back</button>
@@ -317,7 +343,7 @@ nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--sur
     <button class="nav-btn" id="btnNotes" onclick="showView('notes')">📝 Notes</button>
   </div>
   <div class="nav-right">
-    <button class="nav-btn" id="quickUploadBtn" onclick="openQuickUpload()" title="Upload any OHS document — auto-routes to the right course">📎 Upload</button>
+    <button class="nav-btn" id="quickUploadBtn" onclick="openQuickUpload()" title="Upload any OHS document — auto-routes to the right course" style="background:var(--accent);color:#fff;border-color:var(--accent);">+ Add Files</button>
     <button class="sources-btn" id="sourcesBtn" onclick="openSourcesModal()">📂 Sources</button>
     <button class="hamburger" id="hamburger" onclick="toggleSidebar()">☰</button>
   </div>
@@ -464,11 +490,16 @@ nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--sur
       <button class="modal-close" onclick="closeModal('quickUploadModal')">✕</button>
     </div>
     <div class="modal-body">
-      <div class="drop-zone" id="quickDropZone" onclick="document.getElementById('quickFileInput').click()">
-        <div class="drop-zone-icon">📄</div>
-        <div class="drop-zone-text"><strong>Drop any OHS document</strong><br>AI auto-detects the right course · PDF · DOCX · TXT</div>
+      <div class="drop-zone" id="quickDropZone" style="padding:36px 20px;">
+        <div class="drop-zone-icon">📂</div>
+        <div class="drop-zone-text" style="margin-bottom:14px;font-size:14px;"><strong>Drop files or folders here</strong><br>AI detects the right course for each file</div>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+          <button class="btn-primary" style="font-size:13px;padding:8px 18px;" onclick="event.stopPropagation();document.getElementById('quickFileInput').click()">📄 Pick Files</button>
+          <button class="btn-secondary" style="font-size:13px;padding:8px 18px;" onclick="event.stopPropagation();document.getElementById('quickFolderInput').click()">📁 Pick Folder</button>
+        </div>
       </div>
-      <input type="file" id="quickFileInput" class="hidden" multiple accept=".pdf,.docx,.txt,.csv,.json,.md">
+      <input type="file" id="quickFileInput" class="hidden" multiple>
+      <input type="file" id="quickFolderInput" class="hidden" multiple webkitdirectory>
       <div id="quickDetectResults"></div>
     </div>
     <div class="modal-footer" id="quickUploadFooter" style="display:none;">
@@ -571,12 +602,133 @@ let quizSubmitted = false;
 let fcIndex = 0;
 let chapterChatMessages = [];
 let genChatMessages = [];
+let topicsCache = {}; // chapterId -> topic array (for offline restore)
 let editingNoteId = null;
 let isGenerating = false;
 
+// ── State persistence ─────────────────────────────────────────────────────────
+const STATE_KEY = 'sn_state';
+
+function saveState() {
+  const state = {
+    currentView, currentChapter, currentTopic, currentMode, currentTab,
+    overviewCache, flashcardsCache, quizCache,
+    quizAnswers, quizSubmitted, fcIndex,
+    chapterChatMessages, genChatMessages, topicsCache
+  };
+  try {
+    localStorage.setItem(STATE_KEY, JSON.stringify(state));
+  } catch (e) {
+    // Quota exceeded — retry with trimmed caches
+    try {
+      state.overviewCache = {};
+      state.flashcardsCache = {};
+      state.quizCache = {};
+      state.chapterChatMessages = chapterChatMessages.slice(-10);
+      state.genChatMessages = genChatMessages.slice(-10);
+      localStorage.setItem(STATE_KEY, JSON.stringify(state));
+    } catch (e2) { /* give up silently */ }
+  }
+}
+
+// Restore chapter view from saved data without any network calls
+function restoreChapterView(s) {
+  currentChapter = s.currentChapter;
+  currentMode = s.currentMode || 'study';
+  currentTab = s.currentTab || 'overview';
+  isGenerating = false;
+
+  const ch = s.currentChapter;
+  document.getElementById('navChTitle').textContent = ch.title || '';
+  document.getElementById('sidebarChTitle').textContent = (ch.code || '') + ' · ' + (ch.title || '');
+  document.getElementById('sourceModalTitle').textContent = ch.title || '';
+
+  // Restore caches
+  overviewCache       = s.overviewCache       || {};
+  flashcardsCache     = s.flashcardsCache     || {};
+  quizCache           = s.quizCache           || {};
+  quizAnswers         = s.quizAnswers         || {};
+  quizSubmitted       = s.quizSubmitted       || false;
+  fcIndex             = s.fcIndex             || 0;
+  chapterChatMessages = s.chapterChatMessages || [];
+
+  if (ch.id === '__program__') {
+    const list = document.getElementById('topicList');
+    list.innerHTML = `<div class="topic-item topic-item-special active" id="topic-__program__">
+      <div class="topic-item-title">🎓 Full Program Review</div>
+      <div class="topic-item-sub">All 10 OHS courses · Flashcards & Quiz</div>
+    </div>`;
+  } else {
+    // Rebuild topic list from cache (no network needed)
+    const topics = s.topicsCache?.[ch.id] || [];
+    const courseReview = {id:'__course__',title:'Full Course Review',subtitle:'Flashcards & quiz — all topics'};
+    const list = document.getElementById('topicList');
+    list.innerHTML = `<div class="topic-item topic-item-special" id="topic-__course__" onclick="selectTopic(${JSON.stringify(courseReview).replace(/"/g,'&quot;')})">
+        <div class="topic-item-title">📚 Full Course Review</div>
+        <div class="topic-item-sub">All topics · Flashcards & Quiz</div>
+      </div>` +
+      topics.map(t => `
+      <div class="topic-item" id="topic-${t.id}" onclick="selectTopic(${JSON.stringify(t).replace(/"/g,'&quot;')})">
+        <div class="topic-item-title">${t.title}</div>
+        <div class="topic-item-sub">${t.subtitle}</div>
+      </div>`).join('');
+  }
+
+  showView('chapter');
+  document.getElementById('hamburger').classList.remove('hidden');
+
+  if (s.currentTopic) {
+    // Mark active without triggering selectTopic's cache-clearing side effects
+    currentTopic = s.currentTopic;
+    document.querySelectorAll('.topic-item').forEach(el => el.classList.remove('active'));
+    const el = document.getElementById('topic-' + s.currentTopic.id);
+    if (el) el.classList.add('active');
+    setActiveMode(currentMode);
+    setActiveTab(currentTab);
+    if (currentMode === 'study') {
+      renderStudyTab();
+    } else {
+      document.getElementById('studyTabs').classList.add('hidden');
+      document.getElementById('topicPlaceholder').classList.add('hidden');
+      document.getElementById('studyContent').classList.add('hidden');
+      document.getElementById('chatContent').classList.remove('hidden');
+      renderChapterChat();
+    }
+  }
+}
+
+function restoreState() {
+  try {
+    const raw = localStorage.getItem(STATE_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (!s) return;
+
+    // Always restore general chat history
+    if (s.genChatMessages?.length) genChatMessages = s.genChatMessages;
+    if (s.topicsCache) topicsCache = s.topicsCache;
+
+    if (s.currentView === 'chapter' && s.currentChapter) {
+      restoreChapterView(s);
+    } else if (s.currentView === 'chat') {
+      showView('chat');
+      renderGenChat();
+    } else if (s.currentView === 'notes') {
+      showView('notes');
+    }
+  } catch (e) {
+    console.warn('State restore failed:', e);
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') saveState();
+});
+
 // ── Init ──────────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  loadCourses();
+document.addEventListener('DOMContentLoaded', async () => {
+  restoreState(); // sync, no network — restores view immediately
+  loadCourses();  // async, runs in background to refresh course grid
   loadNotes();
   setupSourceDrop();
   setupLibraryDrop();
@@ -708,6 +860,7 @@ async function openProgramReview(tab) {
 async function loadTopics(chId) {
   const res = await fetch('/api/chapters/' + chId + '/topics');
   const topics = await res.json();
+  topicsCache[chId] = topics; // save for offline restore
   const list = document.getElementById('topicList');
   const courseReview = {id:'__course__',title:'Full Course Review',subtitle:'Flashcards & quiz — all topics'};
   list.innerHTML = `<div class="topic-item topic-item-special" id="topic-__course__" onclick="selectTopic(${JSON.stringify(courseReview).replace(/"/g,'&quot;')})">
@@ -720,6 +873,7 @@ async function loadTopics(chId) {
       <div class="topic-item-sub">${t.subtitle}</div>
     </div>
   `).join('');
+  saveState(); // persist the topic list for future offline restores
 }
 
 function selectTopic(topic) {
@@ -733,6 +887,7 @@ function selectTopic(topic) {
   // Close sidebar on mobile
   document.getElementById('sidebar').classList.remove('mobile-open');
   setMode(currentMode);
+  saveState();
 }
 
 function resetChapterContent() {
@@ -747,6 +902,7 @@ function resetChapterContent() {
 function setMode(mode) {
   currentMode = mode;
   setActiveMode(mode);
+  saveState();
   if (!currentTopic) return;
   if (mode === 'study') {
     document.getElementById('studyTabs').classList.remove('hidden');
@@ -769,6 +925,7 @@ function setTab(tab) {
   currentTab = tab;
   setActiveTab(tab);
   if (currentTopic) renderStudyTab();
+  saveState();
 }
 
 function setActiveTab(tab) {
@@ -819,6 +976,7 @@ async function generateOverview() {
     });
     el.innerHTML = marked.parse(raw);
     overviewCache[currentTopic.id] = el.innerHTML;
+    saveState();
   } catch (e) {
     el.innerHTML = `<p style="color:#ef4444">Error: ${e.message}</p>`;
   } finally {
@@ -899,6 +1057,7 @@ async function generateFlashcards(btn) {
     flashcardsCache[currentTopic.id] = await res.json();
     fcIndex = 0;
     renderFlashcards(document.getElementById('studyContent'));
+    saveState();
   } catch (e) { console.error(e); btn.disabled = false; btn.textContent = 'Generate Flashcards'; }
 }
 
@@ -952,6 +1111,7 @@ function selectAnswer(qi, oi, val) {
 function submitQuiz() {
   quizSubmitted = true;
   renderQuiz(document.getElementById('studyContent'));
+  saveState();
 }
 
 function renderQuizScore(container, questions) {
@@ -983,6 +1143,7 @@ async function generateQuiz(btn) {
     quizCache[currentTopic.id] = await res.json();
     quizAnswers = {}; quizSubmitted = false;
     renderQuiz(document.getElementById('studyContent'));
+    saveState();
   } catch (e) { btn.disabled = false; btn.textContent = 'Generate Quiz'; }
 }
 
@@ -1060,7 +1221,7 @@ async function sendChapterChat() {
     });
   } catch (e) { /* aborted or error */ } finally {
     loadEl.remove();
-    if (reply) { chapterChatMessages.push({ role: 'assistant', content: reply }); renderChapterChat(); }
+    if (reply) { chapterChatMessages.push({ role: 'assistant', content: reply }); renderChapterChat(); saveState(); }
     isGenerating = false; currentAbortController = null;
     setSendBtn('chapterChatSend', 'send');
   }
@@ -1093,7 +1254,7 @@ async function sendGenChat() {
     });
   } catch (e) { /* aborted or error */ } finally {
     loadEl.remove();
-    if (reply) { genChatMessages.push({ role: 'assistant', content: reply }); renderGenChat(); }
+    if (reply) { genChatMessages.push({ role: 'assistant', content: reply }); renderGenChat(); saveState(); }
     isGenerating = false; currentAbortController = null;
     setSendBtn('genChatSend', 'send');
   }
@@ -1248,17 +1409,6 @@ async function loadSources() {
     </div>`).join('');
 }
 
-async function uploadSourceFiles(files) {
-  for (const file of files) {
-    const fd = new FormData();
-    fd.append('file', file);
-    try {
-      await fetch('/api/sources/' + currentChapter.id + '/upload', { method: 'POST', body: fd });
-    } catch (e) { console.error(e); }
-  }
-  loadSources();
-}
-
 async function addSourceUrl() {
   const url = document.getElementById('sourceUrlInput').value.trim();
   if (!url) return;
@@ -1307,23 +1457,25 @@ function openQuickUpload() {
 function setupQuickUpload() {
   const dz = document.getElementById('quickDropZone');
   const fi = document.getElementById('quickFileInput');
+  const fo = document.getElementById('quickFolderInput');
   dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
   dz.addEventListener('dragleave', () => dz.classList.remove('over'));
   dz.addEventListener('drop', async e => {
     e.preventDefault(); dz.classList.remove('over');
     const items = [...(e.dataTransfer.items||[])];
     const entries = items.map(i=>i.webkitGetAsEntry?.()).filter(Boolean);
-    const hasDir = entries.some(en=>en.isDirectory);
     let files;
-    if (hasDir) {
+    if (entries.length) {
       const all = (await Promise.all(entries.map(en=>collectFilesFromEntry(en,null,null)))).flat();
       files = all;
     } else {
       files = [...e.dataTransfer.files];
     }
+    openQuickUpload();
     processQuickFiles(files);
   });
-  fi.addEventListener('change', () => { processQuickFiles([...fi.files]); fi.value=''; });
+  fi.addEventListener('change', () => { const f=[...fi.files]; fi.value=''; openQuickUpload(); processQuickFiles(f); });
+  fo.addEventListener('change', () => { const f=[...fo.files]; fo.value=''; openQuickUpload(); processQuickFiles(f); });
 }
 
 async function processQuickFiles(files) {
@@ -1624,6 +1776,68 @@ async function sidebarUpload(files) {
     setTimeout(()=>{ status.textContent=''; }, 4000);
   }
 }
+
+// ── Global drag-and-drop (anywhere on page) ───────────────────────────────────
+(function setupGlobalDrop() {
+  const overlay = document.getElementById('globalDropOverlay');
+
+  // preventDefault on BOTH dragenter and dragover — Chrome requires both
+  // to prevent opening the file in a new tab
+  document.addEventListener('dragenter', e => {
+    e.preventDefault();
+    const hasFiles = [...(e.dataTransfer?.types || [])].some(t => t === 'Files' || t === 'application/x-moz-file');
+    if (hasFiles) overlay.classList.add('active');
+  });
+
+  document.addEventListener('dragover', e => {
+    e.preventDefault();
+    const hasFiles = [...(e.dataTransfer?.types || [])].some(t => t === 'Files' || t === 'application/x-moz-file');
+    if (hasFiles) overlay.classList.add('active');
+  });
+
+  // Hide overlay when drag leaves the window
+  document.addEventListener('dragleave', e => {
+    if (!e.relatedTarget) overlay.classList.remove('active');
+  });
+
+  // Handle drop anywhere on the page
+  document.addEventListener('drop', async e => {
+    e.preventDefault();
+    overlay.classList.remove('active');
+
+    // Let existing dedicated zone handlers do their thing
+    const inZone = e.target.closest?.('#sourceDropZone,#quickDropZone,#libraryDropZone');
+    if (inZone) return;
+
+    try {
+      const items = [...(e.dataTransfer.items || [])];
+      const entries = items.map(i => i.webkitGetAsEntry?.()).filter(Boolean);
+      let files;
+      if (entries.length) {
+        const all = await Promise.all(entries.map(en => collectFilesFromEntry(en, null, null)));
+        files = all.flat();
+      } else {
+        files = [...e.dataTransfer.files];
+      }
+      const valid = files.filter(f => f.size > 0 && !f.name.startsWith('.'));
+      if (!valid.length) return;
+      openModal('quickUploadModal');
+      processQuickFiles(valid);
+    } catch (err) {
+      console.error('Global drop error:', err);
+    }
+  });
+
+  // Mobile floating button — file picker → same AI detection flow
+  const floatInput = document.getElementById('floatFileInput');
+  floatInput.addEventListener('change', () => {
+    const files = [...floatInput.files].filter(f => f.size > 0 && !f.name.startsWith('.'));
+    floatInput.value = '';
+    if (!files.length) return;
+    openModal('quickUploadModal');
+    processQuickFiles(files);
+  });
+})();
 
 // ── Sidebar toggle ────────────────────────────────────────────────────────────
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('mobile-open'); }
