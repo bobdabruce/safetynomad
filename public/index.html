@@ -1789,6 +1789,7 @@ async function sidebarUpload(files) {
   // to prevent opening the dropped file as a new tab
   document.addEventListener('dragenter', e => {
     e.preventDefault();
+    e.stopPropagation();
     if (hasFiles(e)) {
       e.dataTransfer.dropEffect = 'copy';
       overlay.classList.add('active');
@@ -1797,6 +1798,7 @@ async function sidebarUpload(files) {
 
   document.addEventListener('dragover', e => {
     e.preventDefault();
+    e.stopPropagation();
     if (hasFiles(e)) {
       e.dataTransfer.dropEffect = 'copy';
       overlay.classList.add('active');
