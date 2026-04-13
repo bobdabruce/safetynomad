@@ -1785,34 +1785,36 @@ async function sidebarUpload(files) {
     return [...(e.dataTransfer?.types || [])].some(t => t === 'Files' || t === 'application/x-moz-file');
   }
 
-  // Both dragenter AND dragover must preventDefault — Chrome requires both
-  // to prevent opening the dropped file as a new tab
-  document.addEventListener('dragenter', e => {
+  // Use capture phase on window so our handlers fire before Chrome's
+  // native file-navigation handler — this is what actually blocks Chrome
+  // from opening the dropped file as a new tab.
+  window.addEventListener('dragenter', e => {
     e.preventDefault();
     e.stopPropagation();
     if (hasFiles(e)) {
       e.dataTransfer.dropEffect = 'copy';
       overlay.classList.add('active');
     }
-  });
+  }, { capture: true });
 
-  document.addEventListener('dragover', e => {
+  window.addEventListener('dragover', e => {
     e.preventDefault();
     e.stopPropagation();
     if (hasFiles(e)) {
       e.dataTransfer.dropEffect = 'copy';
       overlay.classList.add('active');
     }
-  });
+  }, { capture: true });
 
   // Hide overlay only when cursor leaves the browser window entirely
-  document.addEventListener('dragleave', e => {
+  window.addEventListener('dragleave', e => {
     if (!e.relatedTarget) overlay.classList.remove('active');
-  });
+  }, { capture: true });
 
-  // Handle drop anywhere on the page
-  document.addEventListener('drop', async e => {
+  // Handle drop anywhere on the page — capture phase so Chrome never sees it
+  window.addEventListener('drop', async e => {
     e.preventDefault();
+    e.stopPropagation();
     overlay.classList.remove('active');
 
     // Let dedicated zone handlers do their thing
@@ -1849,7 +1851,7 @@ async function sidebarUpload(files) {
     } catch (err) {
       console.error('Global drop error:', err);
     }
-  });
+  }, { capture: true });
 
   // Mobile floating button — file picker → same AI detection flow
   const floatInput = document.getElementById('floatFileInput');
