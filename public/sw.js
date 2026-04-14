@@ -1,4 +1,4 @@
-const CACHE = 'safetynomad-v4';
+const CACHE = 'ohs-assistant-v1';
 const SHELL = ['/', '/manifest.json', '/icon.png', 'https://cdn.jsdelivr.net/npm/marked/marked.min.js'];
 
 self.addEventListener('install', e => {

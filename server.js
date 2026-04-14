@@ -36,7 +36,7 @@ function saveJSON(file, data) { writeFileSync(join(dataDir, file), JSON.stringif
 
 const DISTRACTOR_QUALITY_RULE = `DISTRACTOR QUALITY RULE: all 4 options plausible and similar length. Never make correct answer longest. No obviously wrong distractors. True/False false statements must be subtle.`;
 
-const BASE_SYSTEM_PROMPT = `You are a world-leading professor in OHS, built into the SafetyNomad platform — a Canadian-focused OHS study system.
+const BASE_SYSTEM_PROMPT = `You are a world-leading professor in OHS, built into the OHS Assistant — a Canadian-focused OHS study system.
 
 Transform course material into engaging, practical study content. Use these EXACT section headers in order:
 ## KEY CONCEPTS
@@ -68,7 +68,7 @@ const CHAPTER_CONTEXT = {
   100: `\nOHS 100: Introduction to OHS. Internal Responsibility System, worker and employer duties, right to refuse, JHSC, OHS legislation overview, Canadian context.`,
 };
 
-const GENERAL_CHAT_PROMPT = `You are SafetyNomad AI — Bob's personal AI assistant. Bob is a student in the University of Fredericton Safety Officer Training Program. Help with OHS study, general questions, daily tasks, and problem-solving. Be direct and efficient.`;
+const GENERAL_CHAT_PROMPT = `You are OHS Assistant AI — Bob's personal AI assistant. Bob is a student in the University of Fredericton Safety Officer Training Program. Help with OHS study, general questions, daily tasks, and problem-solving. Be direct and efficient.`;
 
 const MAX_CONTEXT_CHARS = 80000; // safe budget for source material (~20k tokens)
 const CHARS_PER_SOURCE = 12000;  // per source when selecting by relevance
@@ -304,7 +304,7 @@ app.post('/api/sources/:cid/url', async (q, res) => {
   const { url } = q.body;
   if (!url) return res.status(400).json({ error: 'URL required' });
   try {
-    const r = await fetch(url, { headers: { 'User-Agent': 'SafetyNomad/1.0' }, signal: AbortSignal.timeout(15000) });
+    const r = await fetch(url, { headers: { 'User-Agent': 'OHSAssistant/1.0' }, signal: AbortSignal.timeout(15000) });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const h = await r.text();
     const txt = h.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -514,4 +514,4 @@ app.delete('/api/notes/:id', (q, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🔥 SafetyNomad → http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`🛡️ OHS Assistant → http://localhost:${PORT}`));

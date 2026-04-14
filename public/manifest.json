@@ -1,7 +1,7 @@
 {
-  "name": "SafetyNomad",
-  "short_name": "SafetyNomad",
-  "description": "Canadian OHS course library — study platform for future safety officers",
+  "name": "OHS Assistant",
+  "short_name": "OHS Assistant",
+  "description": "OHS Assistant — Canadian OHS study and personal assistant",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0b0d14",
